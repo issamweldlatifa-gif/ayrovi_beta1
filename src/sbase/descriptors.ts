@@ -36,6 +36,11 @@ export interface SbaseSourceDescriptor {
   costUsd: number | null;
   /** الـendpoint يشتغل بـrun + polling حسب التوثيق. */
   async: boolean;
+  /**
+   * متجر مقترح من البداية في شريط البحث (المتاجر الموجّهة للحريف).
+   * الباقي موجود لكن مطفي: المستعمل يشعّلو بضغطة، والفلتر يتحكّم في الكلفة.
+   */
+  defaultEnabled: boolean;
   supports: SbaseSupports;
   /** الحقول اللي الردّ يوصلها فعلاً (للشفافية في الشاشة). */
   fields: string[];
@@ -60,6 +65,7 @@ const AMAZON_MARKETS: SbaseMarket[] = [
 export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
   {
     id: 'aliexpress',
+    defaultEnabled: true,
     label: 'AliExpress',
     vendor: 'aliexpress.com',
     endpoint: '/v1/api/aliexpress/search/products',
@@ -74,6 +80,7 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
   },
   {
     id: 'amazon',
+    defaultEnabled: true,
     label: 'Amazon',
     vendor: 'amazon.fr',
     endpoint: '/v1/api/amazon/search-products',
@@ -88,6 +95,7 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
   },
   {
     id: 'ebay',
+    defaultEnabled: true,
     label: 'eBay',
     vendor: 'ebay.fr',
     endpoint: '/v1/api/ebay/search',
@@ -102,6 +110,7 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
   },
   {
     id: 'google-shopping',
+    defaultEnabled: true,
     label: 'Google Shopping',
     vendor: 'google.com',
     endpoint: '/v1/api/google-shopping/search',
@@ -119,6 +128,7 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
   },
   {
     id: 'bing-shopping',
+    defaultEnabled: false,
     label: 'Bing Shopping',
     vendor: 'bing.com',
     endpoint: '/v1/api/bing-shopping/search',
@@ -136,6 +146,7 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
   },
   {
     id: 'taobao',
+    defaultEnabled: false,
     label: 'Taobao',
     vendor: 'taobao.com',
     endpoint: '/v1/api/taobao/search/items',
@@ -150,6 +161,7 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
   },
   {
     id: '1688',
+    defaultEnabled: false,
     label: '1688',
     vendor: '1688.com',
     endpoint: '/v1/api/1688/search/items',
@@ -163,6 +175,20 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
     buildBody: (query) => ({ keyword: query, page: 1 }),
   },
 ];
+
+/**
+ * البحث بالصورة في S Base **موش** endpoint من SandBase: هو قناة ثانية (Google
+ * Lens عبر SerpApi، نفس المزوّد اللي يستعملو Z Lens). نعلنوها هنا كوصف مستقلّ
+ * باش الشاشة تعرضها بصدق، وما نخلطوهاش مع capacidade متاع متجر.
+ */
+export const SBASE_IMAGE_SOURCE = {
+  id: 'google-lens',
+  label: 'Google Lens',
+  vendor: 'google.com',
+  supports: { keyword: true, url: false, image: true, details: false, price: true, variants: false, barcode: false },
+  /** المصدر يرجع المتجر لكل نتيجة (source) — الفلتر يتبنى من النتائج نفسها. */
+  storeFromResults: true,
+} as const;
 
 export function findSbaseSource(id: string): SbaseSourceDescriptor | null {
   return SBASE_SOURCES.find((source) => source.id === id) ?? null;
@@ -180,6 +206,7 @@ export function describeSbaseSources(options: { configured: boolean } = { config
     defaultMarket: source.defaultMarket,
     costUsd: source.costUsd,
     async: source.async,
+    defaultEnabled: source.defaultEnabled,
     /** «مضبوط» يعني مفتاح السيرفر موجود — موش نتيجة اختبار حيّة. */
     configured: options.configured,
   }));

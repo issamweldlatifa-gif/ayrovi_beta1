@@ -2,10 +2,12 @@
  * S Base — عميل الـAPI (SandBase عبر خادمنا).
  *
  * التطبيق ما يعرفش المفتاح ولا `api.sandbase.ai`: كل شيء يمرّ من `/api/sbase/*`.
- * النتائج **كما جاوب الخادم** — ما فماش لا تقدير سعر، لا تحويل عملة، لا نتائج
- * تجريبية. الحقول الناقصة تجي معلَّمة في `missing` باش الشاشة تقول الحقيقة.
+ *
+ * عقد البحث: **شريط واحد، مجموعات منفصلة**. كل متجر يرجّع مجموعتو بزمنها
+ * وخطئها وكاشها؛ الفلتر في الشاشة يخفي/يظهر المجموعات، وما فماش دمج نتائج.
  */
 import { apiGetData, apiSendData, type RequestOptions } from './client';
+import { apiUploadFileData } from './nativeUpload';
 
 export interface SbaseSupports {
   keyword: boolean;
@@ -32,6 +34,17 @@ export interface SbaseSource {
   defaultMarket: string | null;
   costUsd: number | null;
   async: boolean;
+  /** مقترح في البحث الافتراضي (المتاجر الموجّهة للحريف). */
+  defaultEnabled: boolean;
+  configured: boolean;
+}
+
+export interface SbaseImageChannel {
+  id: string;
+  label: string;
+  vendor: string;
+  supports: SbaseSupports;
+  storeFromResults: boolean;
   configured: boolean;
 }
 
@@ -39,6 +52,7 @@ export interface SbaseSourcesPayload {
   provider: string;
   configured: boolean;
   sources: SbaseSource[];
+  image: SbaseImageChannel;
 }
 
 export interface SbaseItem {
@@ -57,21 +71,38 @@ export interface SbaseItem {
   missing: string[];
 }
 
-export interface SbaseSearchPayload {
+export interface SbaseGroup {
   source: { id: string; label: string; vendor: string; supports: SbaseSupports };
-  query: string;
-  market: string | null;
-  status: 'ok' | 'empty';
+  status: 'ok' | 'empty' | 'error';
   items: SbaseItem[];
   count: number;
-  missingFields: string[];
-  /** زمن النداء الحقيقي عند SandBase (ms), polling inclus. */
   durationMs: number;
   cached: boolean;
   async: boolean;
-  polls: number;
-  runId: string | null;
+  error: { code: string; message: string } | null;
   costUsd: number | null;
+}
+
+export interface SbaseSearchPayload {
+  query: string;
+  /** أبطأ متجر، موش مجموع الأزمنة. */
+  totalMs: number;
+  groups: SbaseGroup[];
+  count: number;
+  missingFields: string[];
+  fetchedAt: string;
+}
+
+export interface SbaseImagePayload {
+  mode: 'image';
+  channel: SbaseImageChannel;
+  status: 'ok' | 'empty';
+  items: SbaseItem[];
+  count: number;
+  stores: string[];
+  missingFields: string[];
+  durationMs: number;
+  totalMs: number;
   fetchedAt: string;
 }
 
@@ -80,13 +111,24 @@ export function fetchSbaseSources(options?: RequestOptions): Promise<SbaseSource
 }
 
 export async function searchSbase(
-  input: { source: string; q: string; market?: string | null },
+  input: { q: string; sources: string[] },
   options?: RequestOptions,
 ): Promise<SbaseSearchPayload> {
   return apiSendData<SbaseSearchPayload>('POST', '/api/sbase/search', {
     ...options,
-    body: { source: input.source, q: input.q, market: input.market ?? null },
-    // SandBase قد تصل 28 ثانية؛ مهلة التطبيق لازم تكون أوسع.
+    body: { q: input.q, sources: input.sources },
+    // N متجر بالتوازي، أبطأهم قد يصل 28 ثانية (polling SandBase).
     timeoutMs: options?.timeoutMs ?? 35_000,
+  });
+}
+
+/** صورة من المعرض → نتائج بصرية (Google Lens)، عبر خادمنا. */
+export function searchSbaseImage(
+  file: { uri: string; name: string; type: string },
+  options?: RequestOptions,
+): Promise<SbaseImagePayload> {
+  return apiUploadFileData<SbaseImagePayload>('/api/sbase/image', 'image', file, {
+    timeoutMs: options?.timeoutMs ?? 45_000,
+    signal: options?.signal,
   });
 }

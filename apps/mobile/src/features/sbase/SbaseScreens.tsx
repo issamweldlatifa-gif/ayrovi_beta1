@@ -1,63 +1,74 @@
 /**
- * S Base — البحث في المتاجر المدعومة عبر SandBase.
+ * S Base — شريط بحث واحد، نتائج من المتاجر، وفلتر.
  *
- * ── شنوّة هذا ────────────────────────────────────────────────────────────────
- * مدخل جديد في شريط التنقّل: الحريف يختار متجراً (AliExpress، Amazon، eBay…)،
- * وبعدها البحث يمشي **على ذلك المتجر وحدو** عبر خادمنا. كل بطاقة تقول القدرات
- * الحقيقية فقط، وكل نتيجة تحمل مصدرها وزمن استجابتها.
+ * ── الشكل (المرجع: شريط بحث التطبيق) ────────────────────────────────────────
+ *   [ 📷 ]  اكتب «mini traceur gps» …                    [ 🔍 ]
+ *   تحته: [AliExpress] [Amazon] [eBay] [Google Shopping] [Bing] [Taobao] [1688]
+ *   وتحته: «4 boutiques · 2,4 s · 87 résultats» ثمّ مجموعات، مجموعة لكل متجر.
  *
- * ── شنوّة ما هذا ────────────────────────────────────────────────────────────
- *  • موش AYWEBs: ما فماش سلة، ما فماش سعر TND محسوب، ما فماش التقاط.
- *  • موش Z Lens: ما نلمسوش لا `/api/zayrovix` لا كاميرا Lens.
- *  • موش نتائج تجريبية: إذا المفتاح غايب نقولوها، وإذا المصدر ما عطاش حقلاً
- *    نسمّيوه في «حقول ما عطاهاش المصدر».
+ * ── المبادئ اللي ما تبدّلتش ─────────────────────────────────────────────────
+ *  • **ما فماش محرّك موحّد**: كل متجر نداء مستقلّ، بزمنو وخطئو وكاشو الخاص.
+ *    «المجموعة» عرض للنتائج، موش دمج ولا ترتيب موحّد.
+ *  • **الفلتر = اختيار المتاجر**: كي تبدّل الاختيار، ما نعاودوش نجريو بصمت —
+ *    نقولو «relancez» باش ما تتضاعفش الكلفة بلا علم المستعمل.
+ *  • **الصورة**: الكاميرا ترفع صورة → بحث بصري (Google Lens) → النتائج تحمل
+ *    متجرها، والفلتر يتبنى من المتاجر اللي رجّعتها الصورة نفسها.
+ *  • ما فماش mic ولا زرّ ما يخدمش: كل أيقونة في الشريط عندها فعل حقيقي.
  */
-import { useEffect, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { Linking, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useQuery } from '@tanstack/react-query';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import type { SbaseSearchPayload, SbaseSource } from '@/api/sbase';
-import { fetchSbaseSources, searchSbase } from '@/api/sbase';
+import type {
+  SbaseGroup,
+  SbaseImagePayload,
+  SbaseItem,
+  SbaseSearchPayload,
+  SbaseSource,
+} from '@/api/sbase';
+import { fetchSbaseSources, searchSbase, searchSbaseImage } from '@/api/sbase';
 import { AppImage } from '@/design/appImage';
 import { AppScreen } from '@/design/layout';
-import { goBack } from '@/design/navigation';
 import { LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { BRAND } from '@/design/tokens.generated';
 import { RADIUS } from '@/design/tokens.mobile';
-import { AppText, Button, Field } from '@/design/ui';
+import { AppText, Button } from '@/design/ui';
 import { useT, type TranslationKey } from '@/i18n';
 import {
-  capabilitySummary,
   formatCallCost,
   formatDuration,
   formatItemPrice,
   missingLabelKey,
-  searchPath,
-  sourceStatus,
+  supportedCapabilities,
 } from './sbaseLogic';
 
 const SOURCES_KEY = ['sbase', 'sources'] as const;
 
-function Chip({ label, tone = 'muted' }: { label: string; tone?: 'muted' | 'ink' }) {
+type PickedPhoto = { uri: string; name: string; type: string };
+
+function Chip({
+  label, active, onPress, testID, disabled = false,
+}: { label: string; active: boolean; onPress?: () => void; testID?: string; disabled?: boolean }) {
   const theme = useTheme();
-  return <View style={[styles.chip, { borderColor: theme.colors.lineControl }]}>
-    <AppText variant="caption" color={tone === 'ink' ? theme.colors.ink : theme.colors.muted}>{label}</AppText>
-  </View>;
+  return <Pressable
+    testID={testID}
+    accessibilityRole="button"
+    accessibilityState={{ selected: active, disabled }}
+    disabled={disabled}
+    onPress={onPress}
+    style={[styles.chip, {
+      borderColor: active ? theme.colors.ink : theme.colors.lineControl,
+      backgroundColor: active ? theme.colors.accentSoft : 'transparent',
+      opacity: disabled ? theme.opacity.subtle : 1,
+    }]}>
+    <AppText variant="caption" color={active ? theme.colors.ink : theme.colors.muted}>{label}</AppText>
+  </Pressable>;
 }
 
-function SourceMark({ label }: { label: string }) {
-  const theme = useTheme();
-  return <View style={[styles.mark, { backgroundColor: theme.colors.ink }]}>
-    <AppText variant="subtitle" color={theme.mode === 'dark' ? theme.colors.canvas : BRAND.white}>
-      {label.slice(0, 1).toUpperCase()}
-    </AppText>
-  </View>;
-}
-
-function FailureCard({ code, message, onRetry }: { code: string; message: string; onRetry?: () => void }) {
+function ErrorCard({ code, message, onRetry }: { code: string; message: string; onRetry?: () => void }) {
   const theme = useTheme(); const t = useT();
   return <View testID="sbase-error" style={[styles.card, { borderColor: theme.colors.lineControl, backgroundColor: theme.colors.surface }]}>
     <AppText variant="bodyStrong" accessibilityRole="alert" color={theme.status.danger.fg}>{t('sbase.errorTitle')}</AppText>
@@ -67,92 +78,69 @@ function FailureCard({ code, message, onRetry }: { code: string; message: string
   </View>;
 }
 
-export function SbaseHub() {
+function ResultRow({ item, index }: { item: SbaseItem; index: number }) {
   const theme = useTheme(); const t = useT();
-  const sources = useQuery({
-    queryKey: SOURCES_KEY,
-    queryFn: ({ signal }) => fetchSbaseSources({ signal }),
-    staleTime: 60_000,
-  });
-  const list: SbaseSource[] = sources.data?.sources ?? [];
-  const configured = sources.data?.configured ?? false;
-
-  return <AppScreen testID="sbase-hub" hasBottomBar>
-    <View style={styles.hero}>
-      <AppText variant="h2" accessibilityRole="header">{t('sbase.heroTitle')}</AppText>
-      <AppText color={theme.colors.muted}>{t('sbase.heroBody')}</AppText>
-      <AppText variant="caption" color={theme.colors.muted}>{t('sbase.isolated')}</AppText>
+  return <View testID={`sbase-item-${index}`} style={[styles.item, { borderColor: theme.colors.line }]}>
+    <AppImage uri={item.image ?? undefined} decorative style={styles.itemImage} contentFit="cover" />
+    <View style={styles.grow}>
+      <AppText variant="bodyStrong" numberOfLines={2}>{item.title}</AppText>
+      <AppText variant="bodyStrong">{formatItemPrice(item, t('sbase.missing.price'))}</AppText>
+      <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>
+        {[item.store, item.rating !== null ? `${item.rating}★` : null, item.shipping].filter(Boolean).join(' · ') || '—'}
+      </AppText>
+      {item.url ? <Pressable
+        accessibilityRole="link"
+        accessibilityLabel={`${t('sbase.open')} · ${item.title}`}
+        onPress={() => { void Linking.openURL(item.url as string); }}
+        style={styles.openLink}>
+        <AppText variant="captionStrong">{t('sbase.open')}</AppText>
+        <Ionicons name="open-outline" size={theme.iconSize.sm} color={theme.colors.ink} />
+      </Pressable> : null}
     </View>
-
-    {sources.isLoading ? <LoadingBlock /> : null}
-
-    {sources.isError ? <FailureCard
-      code="SBASE_SOURCES" message={(sources.error as Error)?.message ?? ''}
-      onRetry={() => { void sources.refetch(); }} /> : null}
-
-    {!sources.isLoading && !sources.isError && !configured
-      ? <View testID="sbase-unconfigured" style={[styles.card, { borderColor: theme.colors.lineControl, backgroundColor: theme.colors.surface }]}>
-        <AppText variant="bodySmall" accessibilityRole="alert">{t('sbase.notConfigured')}</AppText>
-      </View>
-      : null}
-
-    {list.length > 0 ? <View style={styles.section}>
-      <AppText variant="subtitle" accessibilityRole="header">{t('sbase.chooseStore')}</AppText>
-      <AppText variant="caption" color={theme.colors.muted}>{t('sbase.storeCount', { count: list.length })}</AppText>
-    </View> : null}
-
-    <View style={styles.grid}>
-      {list.map((source) => {
-        const status = sourceStatus(source);
-        return <Pressable
-          key={source.id}
-          testID={`sbase-source-${source.id}`}
-          accessibilityRole="link"
-          accessibilityLabel={`${source.label} · ${t(status === 'ready' ? 'sbase.status.ready' : 'sbase.status.unconfigured')}`}
-          onPress={() => router.push(searchPath(source.id) as never)}
-          style={({ pressed }) => [styles.sourceCard, {
-            borderColor: theme.colors.lineControl,
-            backgroundColor: theme.colors.surface,
-            opacity: pressed ? theme.opacity.subtle : 1,
-          }]}>
-          <View style={styles.sourceHead}>
-            <SourceMark label={source.label} />
-            <View style={styles.grow}>
-              <AppText variant="bodyStrong" numberOfLines={1}>{source.label}</AppText>
-              <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{source.vendor}</AppText>
-            </View>
-          </View>
-          <View style={styles.chips}>
-            {capabilitySummary(source.supports).map((capability) => <Chip
-              key={capability}
-              label={t(`sbase.cap.${capability}` as TranslationKey)} tone="ink" />)}
-          </View>
-          <AppText variant="caption" color={status === 'ready' ? theme.colors.muted : theme.status.danger.fg}>
-            {t(status === 'ready' ? 'sbase.status.ready' : 'sbase.status.unconfigured')}
-          </AppText>
-        </Pressable>;
-      })}
-    </View>
-  </AppScreen>;
+  </View>;
 }
 
-export function SbaseMerchantSearch({ merchant }: { merchant: string }) {
+function GroupHeader({ group }: { group: SbaseGroup }) {
   const theme = useTheme(); const t = useT();
-  const sources = useQuery({
+  const tone = group.status === 'error' ? theme.status.danger.fg : theme.colors.muted;
+  return <View style={[styles.groupHead, { borderColor: theme.colors.line }]}>
+    <AppText variant="bodyStrong" accessibilityRole="header">{group.source.label}</AppText>
+    <AppText variant="caption" color={tone} testID={`sbase-group-${group.source.id}-meta`}>
+      {group.status === 'error'
+        ? `${group.error?.code ?? 'ERROR'} — ${group.error?.message ?? ''}`
+        : `${t('sbase.results', { count: group.count })} · ${formatDuration(group.durationMs)}${group.cached ? ` · ${t('sbase.cachedNote')}` : ''}`}
+    </AppText>
+  </View>;
+}
+
+export function SbaseScreen() {
+  const theme = useTheme(); const t = useT();
+  const sourcesQuery = useQuery({
     queryKey: SOURCES_KEY,
     queryFn: ({ signal }) => fetchSbaseSources({ signal }),
     staleTime: 60_000,
   });
-  const source = (sources.data?.sources ?? []).find((entry) => entry.id === merchant) ?? null;
+  const sources: SbaseSource[] = sourcesQuery.data?.sources ?? [];
+  const imageChannel = sourcesQuery.data?.image ?? null;
+  const configured = sourcesQuery.data?.configured ?? false;
 
+  const [selected, setSelected] = useState<string[]>([]);
   const [text, setText] = useState('');
-  const [market, setMarket] = useState<string | null>(null);
-  const [result, setResult] = useState<SbaseSearchPayload | null>(null);
+  const [photo, setPhoto] = useState<PickedPhoto | null>(null);
+  const [keywordResult, setKeywordResult] = useState<SbaseSearchPayload | null>(null);
+  const [imageResult, setImageResult] = useState<SbaseImagePayload | null>(null);
   const [failure, setFailure] = useState<{ code: string; message: string } | null>(null);
+  const [stale, setStale] = useState(false);
+  const [storeFilter, setStoreFilter] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [elapsed, setElapsed] = useState(0);
 
-  // مؤقّت حيّ أثناء النتظار: الحريف يشوف الزمن يمشي بدل شاشة جامدة.
+  // Sélection par défaut = les boutiques grand public décidées côté serveur.
+  useEffect(() => {
+    if (selected.length > 0 || sources.length === 0) return;
+    setSelected(sources.filter((source) => source.defaultEnabled).map((source) => source.id));
+  }, [sources, selected.length]);
+
   useEffect(() => {
     if (!busy) return;
     const started = Date.now();
@@ -161,141 +149,246 @@ export function SbaseMerchantSearch({ merchant }: { merchant: string }) {
     return () => clearInterval(timer);
   }, [busy]);
 
-  const run = async () => {
+  const capabilities = useMemo(() => {
+    if (sources.length === 0) return [];
+    const picked = sources.filter((source) => selected.includes(source.id));
+    if (picked.length === 0) return [];
+    // Intersection : on n'affiche que ce que TOUTES les boutiques interrogées savent faire.
+    const shared = supportedCapabilities(picked[0].supports)
+      .filter((capability) => picked.every((source) => source.supports[capability] === true));
+    return shared;
+  }, [sources, selected]);
+
+  const runKeyword = async () => {
     const query = text.trim();
-    if (query.length < 2) return;
-    setBusy(true); setFailure(null);
+    if (query.length < 2 || selected.length === 0) return;
+    setBusy(true); setFailure(null); setPhoto(null); setImageResult(null); setStoreFilter(null);
     try {
-      const payload = await searchSbase({ source: merchant, q: query, market });
-      setResult(payload);
+      const payload = await searchSbase({ q: query, sources: selected });
+      setKeywordResult(payload);
+      setStale(false);
     } catch (error) {
       const candidate = error as { code?: string; message?: string };
       setFailure({ code: candidate?.code ?? 'SBASE_ERROR', message: candidate?.message ?? '' });
-      setResult(null);
+      setKeywordResult(null);
     } finally {
       setBusy(false);
     }
   };
 
-  return <AppScreen testID="sbase-merchant" chrome={false} hasBottomBar>
-    <View style={styles.topBar}>
-      <Pressable testID="sbase-back" accessibilityRole="button" accessibilityLabel={t('sbase.back')} onPress={() => goBack('/sbase')} style={styles.iconButton}>
-        <Ionicons name={theme.isRTL ? 'chevron-forward' : 'chevron-back'} size={theme.iconSize.md} color={theme.colors.ink} />
-      </Pressable>
-      <View style={styles.grow}>
-        <AppText variant="subtitle" accessibilityRole="header" numberOfLines={1}>{source?.label ?? merchant}</AppText>
-        <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{t('sbase.viaSandbase')}</AppText>
-      </View>
+  const runImage = async (picked: PickedPhoto) => {
+    setBusy(true); setFailure(null); setKeywordResult(null); setStoreFilter(null);
+    try {
+      const payload = await searchSbaseImage(picked);
+      setImageResult(payload);
+    } catch (error) {
+      const candidate = error as { code?: string; message?: string };
+      setFailure({ code: candidate?.code ?? 'SBASE_IMAGE_ERROR', message: candidate?.message ?? '' });
+      setImageResult(null);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const pickPhoto = async () => {
+    const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+    if (picked.canceled || !picked.assets?.[0]) return;
+    const asset = picked.assets[0];
+    const file: PickedPhoto = {
+      uri: asset.uri,
+      name: asset.fileName ?? 'photo.jpg',
+      type: asset.mimeType ?? 'image/jpeg',
+    };
+    setPhoto(file);
+    await runImage(file);
+  };
+
+  const toggleSource = (id: string) => {
+    setSelected((current) => {
+      const next = current.includes(id) ? current.filter((value) => value !== id) : [...current, id];
+      return next;
+    });
+    if (keywordResult) setStale(true);
+  };
+
+  const groups = keywordResult
+    ? keywordResult.groups.filter((group) => selected.includes(group.source.id))
+    : [];
+  const imageItems = imageResult
+    ? imageResult.items.filter((item) => (storeFilter ? item.store === storeFilter : true))
+    : [];
+
+  return <AppScreen testID="sbase-hub" hasBottomBar>
+    <View style={styles.hero}>
+      <AppText variant="h2" accessibilityRole="header">{t('sbase.heroTitle')}</AppText>
+      <AppText variant="bodySmall" color={theme.colors.muted}>{t('sbase.heroBody')}</AppText>
+      <AppText variant="caption" color={theme.colors.muted}>{t('sbase.isolated')}</AppText>
     </View>
 
-    <Field
-      label={source ? `${t('sbase.search')} · ${source.label}` : t('sbase.search')}
-      value={text}
-      onChangeText={setText}
-      placeholder={t('sbase.searchPlaceholder')}
-      returnKeyType="search"
-      onSubmitEditing={() => { void run(); }}
-      editable={!busy}
-      testID="sbase-query"
-    />
+    {/* ── الشريط: كاميرا · كلمة · زرّ بحث ─────────────────────────────── */}
+    <View style={[styles.bar, { borderColor: theme.colors.ink, backgroundColor: theme.colors.surface }]}>
+      <Pressable
+        testID="sbase-photo"
+        accessibilityRole="button"
+        accessibilityLabel={t('sbase.photo')}
+        onPress={() => { void pickPhoto(); }}
+        disabled={busy || !imageChannel?.configured}
+        style={[styles.barIcon, { opacity: busy || !imageChannel?.configured ? theme.opacity.subtle : 1 }]}>
+        <Ionicons name="camera-outline" size={theme.iconSize.md} color={theme.colors.ink} />
+      </Pressable>
+      <TextInput
+        testID="sbase-query"
+        accessibilityLabel={t('sbase.placeholder')}
+        placeholder={t('sbase.placeholder')}
+        placeholderTextColor={theme.colors.muted}
+        value={text}
+        onChangeText={setText}
+        onSubmitEditing={() => { void runKeyword(); }}
+        returnKeyType="search"
+        editable={!busy}
+        style={[styles.input, theme.text('body'), { color: theme.colors.ink }]}
+      />
+      <Pressable
+        testID="sbase-submit"
+        accessibilityRole="button"
+        accessibilityLabel={t('sbase.search')}
+        onPress={() => { void runKeyword(); }}
+        disabled={busy || text.trim().length < 2 || selected.length === 0}
+        style={[styles.submit, {
+          backgroundColor: theme.colors.ink,
+          opacity: busy || text.trim().length < 2 || selected.length === 0 ? theme.opacity.subtle : 1,
+        }]}>
+        <Ionicons name="search-outline" size={theme.iconSize.md} color={theme.mode === 'dark' ? BRAND.black : BRAND.white} />
+      </Pressable>
+    </View>
 
-    {source && source.markets.length > 1 ? <View style={styles.marketBlock}>
-      <AppText variant="caption" color={theme.colors.muted}>{t('sbase.market')}</AppText>
+    {photo ? <View style={[styles.photoRow, { borderColor: theme.colors.lineControl }]}>
+      <AppImage uri={photo.uri} decorative style={styles.photoThumb} contentFit="cover" />
+      <AppText variant="caption" color={theme.colors.muted} style={styles.grow}>{t('sbase.photoNotice')}</AppText>
+      <Pressable
+        testID="sbase-photo-clear"
+        accessibilityRole="button"
+        accessibilityLabel={t('sbase.photoClear')}
+        onPress={() => { setPhoto(null); setImageResult(null); setFailure(null); }}
+        style={styles.barIcon}>
+        <Ionicons name="close-outline" size={theme.iconSize.sm} color={theme.colors.ink} />
+      </Pressable>
+    </View> : null}
+
+    {/* ── فلتر المتاجر (هو نفسه اختيار ما يُستجوب) ─────────────────────── */}
+    <View style={styles.section}>
+      <AppText variant="caption" color={theme.colors.muted}>{t('sbase.filters')}</AppText>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        {source.markets.map((entry) => {
-          const active = (market ?? source.defaultMarket) === entry.code;
-          return <Pressable
-            key={entry.code}
-            accessibilityRole="button"
-            accessibilityState={{ selected: active }}
-            onPress={() => setMarket(entry.code)}
-            style={[styles.marketChip, {
-              borderColor: active ? theme.colors.ink : theme.colors.lineControl,
-              backgroundColor: active ? theme.colors.accentSoft : 'transparent',
-            }]}>
-            <AppText variant="caption" color={active ? theme.colors.ink : theme.colors.muted}>{entry.label}</AppText>
-          </Pressable>;
-        })}
+        {sources.map((source) => <Chip
+          key={source.id}
+          testID={`sbase-source-${source.id}`}
+          label={source.label}
+          active={selected.includes(source.id)}
+          disabled={busy}
+          onPress={() => toggleSource(source.id)} />)}
       </ScrollView>
+      {capabilities.length > 0 ? <AppText variant="caption" color={theme.colors.muted}>
+        {t('sbase.capabilitiesLabel')} · {capabilities.map((capability) => t(`sbase.cap.${capability}` as TranslationKey)).join(' · ')}
+      </AppText> : null}
+      {stale ? <AppText testID="sbase-stale" variant="caption" color={theme.colors.muted}>{t('sbase.stale')}</AppText> : null}
+    </View>
+
+    {sourcesQuery.isLoading ? <LoadingBlock /> : null}
+    {sourcesQuery.isError ? <ErrorCard
+      code="SBASE_SOURCES" message={(sourcesQuery.error as Error)?.message ?? ''}
+      onRetry={() => { void sourcesQuery.refetch(); }} /> : null}
+
+    {!sourcesQuery.isLoading && !configured ? <View
+      testID="sbase-unconfigured"
+      style={[styles.card, { borderColor: theme.colors.lineControl, backgroundColor: theme.colors.surface }]}>
+      <AppText variant="bodySmall" accessibilityRole="alert">{t('sbase.notConfigured')}</AppText>
     </View> : null}
 
-    <Button
-      label={busy ? `${t('sbase.searching')} ${formatDuration(elapsed)}` : t('sbase.search')}
-      onPress={() => { void run(); }}
-      busy={busy}
-      disabled={busy || text.trim().length < 2}
-      block
-      testID="sbase-submit"
-    />
+    {failure ? <ErrorCard
+      code={failure.code} message={failure.message}
+      onRetry={() => { if (photo) void runImage(photo); else void runKeyword(); }} /> : null}
 
-    {failure ? <FailureCard code={failure.code} message={failure.message} onRetry={() => { void run(); }} /> : null}
+    {busy ? <AppText testID="sbase-progress" variant="caption" color={theme.colors.muted}>
+      {t('sbase.searching')} {formatDuration(elapsed)}
+    </AppText> : null}
 
-    {!failure && !result && !busy ? <View style={[styles.card, { borderColor: theme.colors.lineControl, backgroundColor: theme.colors.surface }]}>
-      <AppText variant="bodySmall" color={theme.colors.muted}>{t('sbase.idle')}</AppText>
-    </View> : null}
-
-    {result ? <View style={styles.section}>
-      <View style={styles.metaRow}>
-        <AppText variant="bodyStrong">
-          {result.status === 'empty' ? t('sbase.empty', { query: result.query }) : t('sbase.results', { count: result.count })}
-        </AppText>
-      </View>
-      <AppText testID="sbase-response-time" variant="caption" color={theme.colors.muted}>
-        {t('sbase.responseTime')} · {formatDuration(result.durationMs)}{result.cached ? ` · ${t('sbase.cachedNote')}` : ''}
-        {formatCallCost(result.costUsd) ? ` · ${t('sbase.cost')} ${formatCallCost(result.costUsd)}` : ''}
+    {/* ── نتائج الكلمة: مجموعة لكل متجر ────────────────────────────────── */}
+    {keywordResult ? <View style={styles.section}>
+      <AppText testID="sbase-summary" variant="bodyStrong">
+        {keywordResult.count > 0 ? t('sbase.results', { count: keywordResult.count }) : t('sbase.empty', { query: keywordResult.query })}
       </AppText>
-      {result.missingFields.length > 0 ? <View style={styles.missingBlock}>
-        <AppText variant="caption" color={theme.colors.muted}>{t('sbase.missingTitle')}</AppText>
-        <View style={styles.chips}>
-          {result.missingFields.map((field) => {
-            const key = missingLabelKey(field);
-            return <Chip key={field} label={key ? t(key as TranslationKey) : field} />;
-          })}
-        </View>
+      <AppText testID="sbase-response-time" variant="caption" color={theme.colors.muted}>
+        {t('sbase.responseTime')} · {formatDuration(keywordResult.totalMs)} · {t('sbase.viaSandbase')}
+      </AppText>
+      {keywordResult.missingFields.length > 0 ? <View style={styles.chips}>
+        {keywordResult.missingFields.map((field) => {
+          const key = missingLabelKey(field);
+          return <Chip key={field} label={`${t('sbase.missingTitle')} : ${key ? t(key as TranslationKey) : field}`} active={false} />;
+        })}
       </View> : null}
     </View> : null}
 
-    {result?.items.map((item, index) => <View
-      key={`${item.url ?? item.id ?? item.title}-${index}`}
-      testID={`sbase-item-${index}`}
-      style={[styles.item, { borderColor: theme.colors.line }]}>
-      <AppImage uri={item.image ?? undefined} decorative style={styles.itemImage} contentFit="cover" />
-      <View style={styles.grow}>
-        <AppText variant="bodyStrong" numberOfLines={2}>{item.title}</AppText>
-        <AppText variant="bodyStrong">{formatItemPrice(item, t('sbase.missing.price'))}</AppText>
-        <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>
-          {[item.store, item.rating !== null ? `${item.rating}★` : null, item.shipping].filter(Boolean).join(' · ') || '—'}
-        </AppText>
-        {item.url ? <Pressable
-          accessibilityRole="link"
-          accessibilityLabel={`${t('sbase.open')} · ${item.title}`}
-          onPress={() => { void Linking.openURL(item.url as string); }}
-          style={styles.openLink}>
-          <AppText variant="captionStrong">{t('sbase.open')}</AppText>
-          <Ionicons name="open-outline" size={theme.iconSize.sm} color={theme.colors.ink} />
-        </Pressable> : null}
-      </View>
+    {groups.map((group) => <View key={group.source.id} testID={`sbase-group-${group.source.id}`} style={styles.group}>
+      <GroupHeader group={group} />
+      {group.status === 'empty' ? <AppText variant="caption" color={theme.colors.muted}>{t('sbase.empty', { query: keywordResult?.query ?? '' })}</AppText> : null}
+      {group.items.map((item, index) => <ResultRow key={`${group.source.id}-${item.url ?? item.id ?? index}`} item={item} index={index} />)}
+      {formatCallCost(group.costUsd) ? <AppText variant="caption" color={theme.colors.muted}>
+        {t('sbase.cost')} {formatCallCost(group.costUsd)}
+      </AppText> : null}
     </View>)}
+
+    {/* ── نتائج الصورة: فلتر بالمتجر، والنتائج تحمل مصدرها ──────────────── */}
+    {imageResult ? <View style={styles.section}>
+      <AppText testID="sbase-image-summary" variant="bodyStrong">
+        {imageResult.count > 0 ? t('sbase.results', { count: imageResult.count }) : t('sbase.empty', { query: '' })}
+      </AppText>
+      <AppText variant="caption" color={theme.colors.muted}>
+        {t('sbase.responseTime')} · {formatDuration(imageResult.totalMs)} · {imageResult.channel.label}
+      </AppText>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        <Chip testID="sbase-store-all" label={t('sbase.allStores')} active={storeFilter === null} onPress={() => setStoreFilter(null)} />
+        {[...new Set(imageResult.items.map((item) => item.store).filter((store): store is string => Boolean(store)))]
+          .map((store) => <Chip
+            key={store}
+            testID={`sbase-store-${store}`}
+            label={store}
+            active={storeFilter === store}
+            onPress={() => setStoreFilter(store)} />)}
+      </ScrollView>
+      {imageItems.map((item, index) => <ResultRow key={`img-${item.url ?? item.id ?? index}`} item={item} index={index} />)}
+    </View> : null}
+
+    {!busy && !failure && !keywordResult && !imageResult && !sourcesQuery.isLoading ? <View
+      style={[styles.card, { borderColor: theme.colors.lineControl, backgroundColor: theme.colors.surface }]}>
+      <AppText variant="bodySmall" color={theme.colors.muted}>{t('sbase.idle')}</AppText>
+    </View> : null}
   </AppScreen>;
 }
 
 const styles = StyleSheet.create({
   grow: { flex: 1 },
-  hero: { gap: 8, paddingBottom: 8 },
-  section: { gap: 6, marginTop: 8 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 12 },
-  sourceCard: { width: '47%', flexGrow: 1, gap: 10, padding: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.md },
-  sourceHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  mark: { width: 36, height: 36, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center' },
+  hero: { gap: 6, paddingBottom: 10 },
+  bar: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    borderWidth: 2, borderRadius: RADIUS.xl, paddingHorizontal: 6, paddingVertical: 4,
+  },
+  barIcon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  input: { flex: 1, minHeight: 40, paddingHorizontal: 4 },
+  submit: { width: 44, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: RADIUS.lg },
+  photoRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8,
+    padding: 8, borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.md,
+  },
+  photoThumb: { width: 40, height: 40, borderRadius: RADIUS.sm, overflow: 'hidden' },
+  section: { gap: 6, marginTop: 12 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip: { borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.xl, paddingHorizontal: 8, paddingVertical: 2 },
+  chip: {
+    borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.xl,
+    paddingHorizontal: 10, paddingVertical: 4,
+  },
   card: { gap: 8, padding: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.md, marginTop: 12 },
-  topBar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 8 },
-  iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  marketBlock: { gap: 6 },
-  marketChip: { borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.xl, paddingHorizontal: 10, paddingVertical: 4 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  missingBlock: { gap: 4, marginTop: 4 },
+  group: { marginTop: 16, gap: 4 },
+  groupHead: { gap: 2, paddingBottom: 6, borderBottomWidth: StyleSheet.hairlineWidth },
   item: { flexDirection: 'row', gap: 12, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth },
   itemImage: { width: 72, height: 72, borderRadius: RADIUS.sm, overflow: 'hidden' },
   openLink: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },

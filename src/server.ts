@@ -270,7 +270,9 @@ const costlyZayrovixPaths = new Set(['/analyze-image', '/analyze-url', '/analyze
  * indépendant du quota Z Lens. Chaque appel coûte de l'argent chez SandBase. */
 const sbaseSearchRateLimit = rateLimit('sbase-search', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, authenticatedRateLimitKey);
 const sbaseSourcesRateLimit = rateLimit('sbase-sources', process.env.NODE_ENV === 'test' ? 1_000 : 240, 10 * 60_000, authenticatedRateLimitKey);
+const sbaseImageRateLimit = rateLimit('sbase-image', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000, authenticatedRateLimitKey);
 app.use('/api/sbase/search', sbaseSearchRateLimit);
+app.use('/api/sbase/image', sbaseImageRateLimit);
 app.use('/api/sbase/sources', sbaseSourcesRateLimit);
 // Z Lens mobile : la détection seule (cadre de sélection + Live) a son PROPRE
 // compteur. Live interroge la caméra quand le téléphone se stabilise : sur le

@@ -8,13 +8,10 @@ import { describe, expect, test } from 'vitest';
 
 import {
   CAPABILITY_ORDER,
-  capabilitySummary,
   formatCallCost,
   formatDuration,
   formatItemPrice,
   missingLabelKey,
-  searchPath,
-  sourceStatus,
   supportedCapabilities,
 } from '../src/features/sbase/sbaseLogic';
 
@@ -26,13 +23,8 @@ describe('S Base — capacités', () => {
     expect(supportedCapabilities({ ...NONE })).toEqual([]);
     expect(supportedCapabilities(null)).toEqual([]);
     expect(CAPABILITY_ORDER.length).toBe(7);
-    expect(capabilitySummary({ ...NONE, keyword: true, price: true, image: true })).toEqual(['keyword', 'image']);
   });
 
-  test('readiness est binaire et ne prétend pas tester la connexion', () => {
-    expect(sourceStatus({ configured: true })).toBe('ready');
-    expect(sourceStatus({ configured: false })).toBe('unconfigured');
-  });
 });
 
 describe('S Base — formats honnêtes', () => {
@@ -62,8 +54,4 @@ describe('S Base — formats honnêtes', () => {
     expect(missingLabelKey('couleur')).toBeNull();
   });
 
-  test('la route de recherche est encodée (une source peut contenir un tiret)', () => {
-    expect(searchPath('aliexpress')).toBe('/sbase/aliexpress');
-    expect(searchPath('google-shopping')).toBe('/sbase/google-shopping');
-  });
 });

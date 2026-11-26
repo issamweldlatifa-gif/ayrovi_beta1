@@ -70,16 +70,3 @@ export function formatCallCost(costUsd: number | null | undefined): string | nul
   return `${costUsd.toFixed(decimals).replace('.', ',')} $`;
 }
 
-/** «مضبوط / غير مضبوط» — readiness حقيقي، موش نتيجة اختبار. */
-export function sourceStatus(source: { configured: boolean }): 'ready' | 'unconfigured' {
-  return source.configured ? 'ready' : 'unconfigured';
-}
-
-export function searchPath(merchant: string): string {
-  return `/sbase/${encodeURIComponent(merchant)}`;
-}
-
-/** شرح مختصر لمصدر: أوّل قدرتين + عدّاد، باش البطاقة ما تفيضش. */
-export function capabilitySummary(supports: SbaseSupports | null | undefined): CapabilityKey[] {
-  return supportedCapabilities(supports).slice(0, 2);
-}

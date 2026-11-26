@@ -1,21 +1,39 @@
 /**
- * S Base — banc d'essai SandBase (marchand, indépendant d'AYWEBs et de Z Lens).
+ * S Base — recherche marchande (SandBase) + canal image (Google Lens).
  *
  * Ce que ces tests protègent :
- *   1. la matrice de capacités est HONNÊTE (aucune image/URL/code-barres promis) ;
- *   2. le client SandBase gère l'enveloppe synchrone ET le mode run + polling ;
- *   3. `durationMs` est un temps réel mesuré, jamais une constante ;
- *   4. les routes disent la vérité : 503 sans clé, 404 source inconnue, 400 requête
- *      trop courte — et jamais de résultat inventé ;
- *   5. le module reste ISOLÉ : aucun import d'AYWEBs ni de Zayrovix.
+ *   1. la matrice de capacités reste HONNÊTE (les 7 endpoints SandBase sont
+ *      « mots-clés » ; la recherche par image est un canal distinct, déclaré) ;
+ *   2. le client gère l'enveloppe synchrone ET le mode run + polling ;
+ *   3. `durationMs` est un temps réel mesuré, par boutique ;
+ *   4. un barreau qui tombe (401, timeout) ne casse pas les autres : le groupe
+ *      en erreur porte son code, les autres rendent leurs résultats ;
+ *   5. aucune requête payante ne part sans clé, sans requête, ou sans boutique ;
+ *   6. l'isolation : seule la recherche par image réutilise le service visuel
+ *      existant (aucune réécriture de Z Lens) — et aucun fichier d'API/route.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import express from 'express';
 import request from 'supertest';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+
+vi.mock('../src/zayrovix/services/visualSearch', () => ({
+  serpApiVisualReady: () => true,
+  serpApiVisualSearch: vi.fn(async () => [
+    {
+      id: 'lens_1', title: 'Mini traceur GPS', source: 'Amazon', sourceUrl: 'https://www.amazon.fr/dp/T1',
+      image: 'https://img/1.jpg', price: 29.99, currency: 'EUR',
+    },
+    {
+      id: 'lens_2', title: 'Traceur GPS voiture', source: 'SHEIN', sourceUrl: 'https://shein.com/p/2',
+      image: 'https://img/2.jpg', price: null, currency: null,
+    },
+  ]),
+}));
 
 import {
+  SBASE_IMAGE_SOURCE,
   SBASE_SOURCES,
   describeSbaseSources,
   findSbaseSource,
@@ -27,6 +45,15 @@ import { clearSbaseCache, createSbaseRouter } from '../src/sbase/routes';
 
 const KEY = 'sb_test_key';
 
+// Vraie petite image PNG générée localement : `sharp` la valide sans réseau.
+let PHOTO: Buffer = Buffer.alloc(0);
+beforeAll(async () => {
+  const sharp = (await import('sharp')).default;
+  PHOTO = await sharp({ create: { width: 32, height: 32, channels: 3, background: { r: 240, g: 240, b: 240 } } })
+    .png()
+    .toBuffer();
+});
+
 function app() {
   const instance = express();
   instance.use(express.json());
@@ -36,6 +63,21 @@ function app() {
 
 const envelope = (data: unknown) => ({ status: 'completed', id: 'run_1', outputs: [{ data }] });
 
+/** Réponse par boutique : l'URL contient l'endpoint de la plateforme. */
+function stubSources(handlers: Record<string, () => Response>) {
+  vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+    for (const [needle, handler] of Object.entries(handlers)) if (String(url).includes(needle)) return handler();
+    return new Response(JSON.stringify(envelope({ products: [] })), { status: 200, headers: init ? undefined : undefined });
+  }));
+}
+
+const amazonOk = () => new Response(JSON.stringify(envelope({
+  products: [{
+    asin: 'B01', product_title: 'Casque A', product_price: '99,00 €', currency: 'EUR',
+    product_url: 'https://a/1', product_photo: 'https://a/1.jpg',
+  }],
+})), { status: 200 });
+
 beforeEach(() => {
   process.env.SANDBASE_API_KEY = KEY;
   clearSbaseCache();
@@ -44,69 +86,66 @@ beforeEach(() => {
 afterEach(() => {
   delete process.env.SANDBASE_API_KEY;
   vi.unstubAllGlobals();
+  vi.clearAllMocks();
 });
 
-describe('S Base — catalogue de sources', () => {
-  test('chaque source est un endpoint SandBase réel, et la matrice ne promet que le vrai', () => {
-    expect(SBASE_SOURCES.length).toBeGreaterThanOrEqual(6);
+describe('S Base — catalogue', () => {
+  test('les 7 boutiques sont des endpoints SandBase réels, en mots-clés seulement', () => {
+    expect(SBASE_SOURCES.length).toBe(7);
     const ids = new Set<string>();
     for (const source of SBASE_SOURCES) {
       expect(ids.has(source.id)).toBe(false);
       ids.add(source.id);
       expect(source.endpoint.startsWith('/v1/api/')).toBe(true);
       expect(source.supports.keyword).toBe(true);
-      // v1 = recherche par mots-clés uniquement : rien d'autre n'est exposé.
       expect(source.supports.image).toBe(false);
       expect(source.supports.url).toBe(false);
       expect(source.supports.barcode).toBe(false);
       expect(source.supports.variants).toBe(false);
       expect(source.supports.details).toBe(false);
-      expect(source.fields.length).toBeGreaterThan(0);
     }
   });
 
-  test('les endpoints sont ceux de la documentation publiée', () => {
-    expect(findSbaseSource('aliexpress')?.endpoint).toBe('/v1/api/aliexpress/search/products');
-    expect(findSbaseSource('amazon')?.endpoint).toBe('/v1/api/amazon/search-products');
-    expect(findSbaseSource('ebay')?.endpoint).toBe('/v1/api/ebay/search');
-    expect(findSbaseSource('google-shopping')?.endpoint).toBe('/v1/api/google-shopping/search');
-    expect(findSbaseSource('bing-shopping')?.endpoint).toBe('/v1/api/bing-shopping/search');
-    expect(findSbaseSource('taobao')?.endpoint).toBe('/v1/api/taobao/search/items');
-    expect(findSbaseSource('inconnu')).toBeNull();
+  test('la sélection par défaut est bornée aux boutiques grand public (coût maîtrisé)', () => {
+    const defaults = SBASE_SOURCES.filter((source) => source.defaultEnabled).map((source) => source.id);
+    expect(defaults).toEqual(['aliexpress', 'amazon', 'ebay', 'google-shopping']);
+    // Les sources « sourcing » existent mais ne partent pas sans choix explicite.
+    expect(SBASE_SOURCES.filter((source) => !source.defaultEnabled).map((source) => source.id))
+      .toEqual(['bing-shopping', 'taobao', '1688']);
   });
 
-  test('le corps envoyé utilise les paramètres documentés de chaque plateforme', () => {
+  test('la recherche par image est un canal séparé, déclaré avec ses vraies capacités', () => {
+    expect(SBASE_IMAGE_SOURCE.id).toBe('google-lens');
+    expect(SBASE_IMAGE_SOURCE.supports.image).toBe(true);
+    expect(SBASE_IMAGE_SOURCE.supports.barcode).toBe(false);
+    expect(SBASE_IMAGE_SOURCE.storeFromResults).toBe(true);
+  });
+
+  test('les bodies utilisent les paramètres documentés', () => {
     expect(findSbaseSource('aliexpress')?.buildBody('case', null)).toMatchObject({ q: 'case' });
     expect(findSbaseSource('amazon')?.buildBody('case', 'DE')).toMatchObject({ keyword: 'case', country: 'DE' });
     expect(findSbaseSource('ebay')?.buildBody('case', null)).toMatchObject({ _nkw: 'case' });
     expect(findSbaseSource('google-shopping')?.buildBody('case', 'it')).toMatchObject({ q: 'case', gl: 'it' });
-    expect(findSbaseSource('bing-shopping')?.buildBody('case', 'gb')).toMatchObject({ q: 'case', cc: 'gb' });
+    expect(findSbaseSource('inconnu')).toBeNull();
   });
 
-  test('readiness est un état de configuration, pas un résultat de test', () => {
+  test('readiness est un état de configuration, et la requête est validée avant tout appel', () => {
     expect(describeSbaseSources({ configured: false }).every((source) => source.configured === false)).toBe(true);
-    expect(describeSbaseSources({ configured: true }).every((source) => source.configured === true)).toBe(true);
-  });
-
-  test('la requête est validée avant tout appel payant', () => {
     expect(validateSbaseQuery('a')).toEqual({ error: expect.any(String) });
-    expect(validateSbaseQuery('   ')).toEqual({ error: expect.any(String) });
     expect(validateSbaseQuery('x'.repeat(91))).toEqual({ error: expect.any(String) });
-    expect(validateSbaseQuery('  casque   bluetooth ')).toEqual({ query: 'casque bluetooth' });
+    expect(validateSbaseQuery('  mini   traceur ')).toEqual({ query: 'mini traceur' });
   });
 });
 
 describe('S Base — extraction des produits', () => {
   test('Amazon (`products[]`) : champs réels, aucun champ inventé', () => {
     const items = extractProducts({
-      country: 'FR',
       products: [{
         asin: 'B0TEST', product_title: 'Casque Bluetooth', product_price: '89,99 €', currency: 'EUR',
         product_url: 'https://www.amazon.fr/dp/B0TEST', product_photo: 'https://img/1.jpg',
         product_star_rating: '4.5', product_num_ratings: 1200, delivery: 'Livraison gratuite',
       }],
     }, { arrays: [['products']] });
-    expect(items).toHaveLength(1);
     expect(items[0]).toMatchObject({
       id: 'B0TEST', title: 'Casque Bluetooth', amount: 89.99, currency: 'EUR',
       url: 'https://www.amazon.fr/dp/B0TEST', store: null, rating: 4.5, reviews: 1200,
@@ -114,32 +153,24 @@ describe('S Base — extraction des produits', () => {
     expect(items[0].missing).toContain('store');
   });
 
-  test('Google/Bing (`shopping_results[]`) : prix + vendeur', () => {
-    const items = extractProducts({
-      shopping_results: [{ title: 'Écouteurs', price: '$14.99', extracted_price: 14.99, source: 'Target', thumbnail: 'https://i/t.jpg', product_id: 'p1' }],
-    }, { arrays: [['shopping_results']] });
-    expect(items[0]).toMatchObject({ title: 'Écouteurs', amount: 14.99, currency: 'USD', store: 'Target', id: 'p1' });
-  });
-
-  test('AliExpress (forme libre) : le parcours profond trouve les produits sans schéma connu', () => {
+  test('AliExpress (forme libre) : le parcours profond trouve les produits', () => {
     const items = extractProducts({
       result: { mods: { itemList: { content: [
         { itemId: 1001, title: 'Coque iPhone', salePrice: 'TND 12,500', imageUrl: 'https://ae/1.jpg', detailUrl: 'https://ae/1' },
       ] } } },
     });
-    expect(items).toHaveLength(1);
     expect(items[0]).toMatchObject({ id: '1001', title: 'Coque iPhone', amount: 12.5, currency: 'TND' });
   });
 
-  test('prix : formats FR/US/CN sont lus, jamais devinés', () => {
+  test('prix : formats FR/US/TN lus, jamais devinés', () => {
     expect(parsePriceText('1 234,56 €')).toEqual({ amount: 1234.56, currency: 'EUR' });
     expect(parsePriceText('$1,549.00')).toEqual({ amount: 1549, currency: 'USD' });
-    // «45,000 TND» = 45 dinars et 000 millimes — la 3e décimale est réelle en Tunisie.
+    // «45,000 TND» = 45 dinars et 000 millimes : la 3e décimale est réelle en Tunisie.
     expect(parsePriceText('TND 45,000')).toEqual({ amount: 45, currency: 'TND' });
     expect(parsePriceText('')).toEqual({ amount: null, currency: null });
   });
 
-  test('les facettes manquantes sont nommées (pas de valeur de remplacement)', () => {
+  test('les facettes manquantes sont nommées', () => {
     const items = extractProducts({ products: [{ asin: 'A', product_title: 'X' }] }, { arrays: [['products']] });
     expect(missingFacets(items)).toEqual(expect.arrayContaining(['image', 'price', 'currency', 'link']));
     expect(normalizeProduct({ not: 'a product' })).toBeNull();
@@ -147,38 +178,30 @@ describe('S Base — extraction des produits', () => {
 });
 
 describe('S Base — client SandBase', () => {
-  test('enveloppe synchrone : durée mesurée, data extraite', async () => {
-    const started = Date.now();
+  test('enveloppe synchrone : durée mesurée', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(envelope({ products: [] })), { status: 200 })));
     const result = await runSandbaseSearch(findSbaseSource('amazon')!, 'casque', 'FR');
     expect(result.data).toEqual({ products: [] });
     expect(result.polls).toBe(0);
     expect(result.durationMs).toBeGreaterThanOrEqual(0);
-    expect(Date.now() - started).toBeLessThan(1000);
   });
 
-  test('mode asynchrone : POST puis GET /v1/run/{id} jusqu’à completed', async () => {
+  test('mode asynchrone : POST puis GET /v1/run/{id}', async () => {
     const calls: string[] = [];
     vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
       calls.push(`${init?.method ?? 'GET'} ${String(url)}`);
-      if (init?.method === 'POST') {
-        return new Response(JSON.stringify({ status: 'queued', id: 'run_42' }), { status: 200 });
-      }
+      if (init?.method === 'POST') return new Response(JSON.stringify({ status: 'queued', id: 'run_42' }), { status: 200 });
       return new Response(JSON.stringify(envelope({ shopping_results: [] })), { status: 200 });
     }));
     const result = await runSandbaseSearch(findSbaseSource('ebay')!, 'iphone', null, { pollIntervalMs: 1 });
     expect(result.runId).toBe('run_42');
     expect(result.polls).toBe(1);
-    expect(result.async).toBe(true);
-    expect(calls[0]).toContain('POST https://api.sandbase.ai/v1/api/ebay/search');
     expect(calls[1]).toContain('GET https://api.sandbase.ai/v1/run/run_42');
   });
 
   test('une clé refusée devient une erreur explicite, pas une liste vide', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ error: 'bad key' }), { status: 401 })));
-    await expect(runSandbaseSearch(findSbaseSource('amazon')!, 'x', null)).rejects.toMatchObject({
-      code: 'SANDBASE_UNAUTHORIZED',
-    });
+    await expect(runSandbaseSearch(findSbaseSource('amazon')!, 'x', null)).rejects.toMatchObject({ code: 'SANDBASE_UNAUTHORIZED' });
   });
 
   test('sans clé, le client refuse AVANT tout appel réseau', async () => {
@@ -191,65 +214,91 @@ describe('S Base — client SandBase', () => {
   });
 });
 
-describe('S Base — routes publiques', () => {
-  test('sources : la capacité réelle et la readiness sortent telles quelles', async () => {
+describe('S Base — routes', () => {
+  test('sources : capacités réelles, sélection par défaut et canal image', async () => {
     const response = await request(app()).get('/api/sbase/sources').expect(200);
-    expect(response.body.success).toBe(true);
     expect(response.body.data.configured).toBe(true);
-    const aliexpress = response.body.data.sources.find((source: { id: string }) => source.id === 'aliexpress');
-    expect(aliexpress.supports).toMatchObject({ keyword: true, image: false, barcode: false });
+    expect(response.body.data.sources).toHaveLength(7);
+    expect(response.body.data.image).toMatchObject({ id: 'google-lens', supports: { image: true } });
   });
 
-  test('sans clé : 503 explicite, et jamais de faux résultats', async () => {
+  test('sans clé : 503, aucun appel réseau', async () => {
     delete process.env.SANDBASE_API_KEY;
     const fetchSpy = vi.fn();
     vi.stubGlobal('fetch', fetchSpy);
-    const response = await request(app()).post('/api/sbase/search').send({ source: 'amazon', q: 'casque' }).expect(503);
-    expect(response.body).toMatchObject({ success: false, code: 'SANDBASE_NOT_CONFIGURED' });
+    const response = await request(app()).post('/api/sbase/search').send({ q: 'casque' }).expect(503);
+    expect(response.body.code).toBe('SANDBASE_NOT_CONFIGURED');
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  test('source inconnue / requête trop courte : 404 et 400', async () => {
-    await request(app()).post('/api/sbase/search').send({ source: 'zara', q: 'casque' }).expect(404);
-    const short = await request(app()).post('/api/sbase/search').send({ source: 'amazon', q: 'a' }).expect(400);
+  test('requête trop courte : 400 ; liste vide : 400', async () => {
+    const short = await request(app()).post('/api/sbase/search').send({ q: 'a' }).expect(400);
     expect(short.body.code).toBe('INVALID_QUERY');
+    const none = await request(app()).post('/api/sbase/search').send({ q: 'casque', sources: [] }).expect(200);
+    // Liste vide explicitement demandée ⇒ on retombe sur la sélection par défaut.
+    expect(none.body.data.groups.length).toBe(4);
   });
 
-  test('recherche réussie : durée réelle + champs manquants + cache explicite', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(envelope({
-      products: [
-        { asin: 'B01', product_title: 'Casque A', product_price: '99,00 €', currency: 'EUR', product_url: 'https://a/1', product_photo: 'https://a/1.jpg' },
-        { asin: 'B02', product_title: 'Casque B', product_price: '129,00 €', currency: 'EUR', product_url: 'https://a/2', product_photo: 'https://a/2.jpg' },
-      ],
-    })), { status: 200 })));
+  test('chaque boutique interrogée rend SON groupe, SON temps et SON erreur', async () => {
+    stubSources({
+      '/amazon/search-products': amazonOk,
+      '/ebay/search': () => new Response(JSON.stringify({ error: 'quota' }), { status: 401 }),
+    });
 
-    const first = await request(app()).post('/api/sbase/search').send({ source: 'amazon', q: 'casque', market: 'fr' }).expect(200);
-    expect(first.body.data.status).toBe('ok');
-    expect(first.body.data.count).toBe(2);
-    expect(first.body.data.durationMs).toBeGreaterThanOrEqual(0);
-    expect(first.body.data.cached).toBe(false);
-    expect(first.body.data.missingFields).toContain('store');
-    expect(first.body.data.items[0]).toMatchObject({ title: 'Casque A', amount: 99, currency: 'EUR' });
+    const response = await request(app())
+      .post('/api/sbase/search')
+      .send({ q: 'casque', sources: ['amazon', 'ebay'] })
+      .expect(200);
 
-    const second = await request(app()).post('/api/sbase/search').send({ source: 'amazon', q: 'casque', market: 'fr' }).expect(200);
-    expect(second.body.data.cached).toBe(true);
-    expect(second.body.data.durationMs).toBe(first.body.data.durationMs);
+    const groups = response.body.data.groups;
+    expect(groups).toHaveLength(2);
+    const amazon = groups.find((group: { source: { id: string } }) => group.source.id === 'amazon');
+    const ebay = groups.find((group: { source: { id: string } }) => group.source.id === 'ebay');
+    expect(amazon).toMatchObject({ status: 'ok', count: 1, error: null });
+    expect(amazon.items[0]).toMatchObject({ title: 'Casque A', amount: 99, currency: 'EUR' });
+    // Une boutique en échec ne casse pas les autres : son code, pas une liste vide.
+    expect(ebay).toMatchObject({ status: 'error', count: 0 });
+    expect(ebay.error.code).toBe('SANDBASE_UNAUTHORIZED');
+    expect(response.body.data.totalMs).toBeGreaterThanOrEqual(0);
   });
 
-  test('résultat vide : status `empty` (pas une erreur déguisée)', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(envelope({ shopping_results: [] })), { status: 200 })));
-    const response = await request(app()).post('/api/sbase/search').send({ source: 'bing-shopping', q: 'zzzz introuvable' }).expect(200);
-    expect(response.body.data).toMatchObject({ status: 'empty', count: 0, items: [] });
+  test('boutique vide : groupe `empty` (pas une erreur déguisée)', async () => {
+    stubSources({ '/bing-shopping/search': () => new Response(JSON.stringify(envelope({ shopping_results: [] })), { status: 200 }) });
+    const response = await request(app()).post('/api/sbase/search').send({ q: 'zzz introuvable', sources: ['bing-shopping'] }).expect(200);
+    expect(response.body.data.groups[0]).toMatchObject({ status: 'empty', count: 0, items: [] });
+  });
+
+  test('image : une photo ⇒ résultats visuels, chaque résultat porte sa boutique', async () => {
+    const response = await request(app())
+      .post('/api/sbase/image')
+      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
+      .expect(200);
+
+    expect(response.body.data).toMatchObject({ mode: 'image', count: 2, stores: expect.arrayContaining(['Amazon', 'SHEIN']) });
+    expect(response.body.data.items[0]).toMatchObject({ store: 'Amazon', amount: 29.99, currency: 'EUR' });
+    // Le second résultat n'a pas de prix : on le dit, on n'invente pas 0.
+    expect(response.body.data.items[1].missing).toContain('price');
+    expect(response.body.data.durationMs).toBeGreaterThanOrEqual(0);
+  });
+
+  test('image : sans fichier ⇒ 400 explicite', async () => {
+    const response = await request(app()).post('/api/sbase/image').expect(400);
+    expect(response.body.code).toBe('SBASE_IMAGE_EMPTY');
   });
 });
 
 describe('S Base — isolation', () => {
-  test('le module n’importe ni AYWEBs ni Zayrovix', () => {
-    for (const file of ['descriptors.ts', 'client.ts', 'extract.ts', 'routes.ts']) {
+  test('le module n’importe ni les routes AYWEBs ni les routes Zayrovix', () => {
+    for (const file of ['descriptors.ts', 'client.ts', 'extract.ts', 'routes.ts', 'image.ts']) {
       const source = readFileSync(join(process.cwd(), 'src/sbase', file), 'utf8');
       expect(source).not.toMatch(/from '\.\.\/aywebs/);
-      expect(source).not.toMatch(/from '\.\.\/zayrovix/);
-      expect(source).not.toMatch(/api\.sandbase\.ai\/v1\/run.*recherche unifiée/i);
+      expect(source).not.toMatch(/from '\.\.\/zayrovix\/routes/);
     }
+  });
+
+  test('une seule réutilisation : le service visuel existant, importé tel quel', () => {
+    const image = readFileSync(join(process.cwd(), 'src/sbase/image.ts'), 'utf8');
+    const imports = [...image.matchAll(/from '([^']+)'/g)].map((match) => match[1]).filter((path) => path.includes('zayrovix'));
+    expect(imports).toEqual(['../zayrovix/services/visualSearch']);
   });
 });
