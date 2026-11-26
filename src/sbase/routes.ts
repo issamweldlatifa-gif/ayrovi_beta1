@@ -35,6 +35,7 @@ import {
   apifyConfigured,
   apifyImageBase64,
   apifyImageEndpoint,
+  APIFY_IMAGE_MAX_RESULTS,
   runApifyDetail,
   runApifySearch,
   searchApifyAliexpressByImage,
@@ -398,13 +399,32 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
       const imageBase64 = await apifyImageBase64(normalized.buffer, normalized.mimeType);
 
       /*
+       * التعمير التدريجي (قرار المالك): الشاشة تبعت نداء **لكل متجر** على حدة —
+       * `?stores=1688,aliexpress` يحدّد من يُستجوب في هذا النداء. حصر صارم:
+       * اسم غريب ⇒ رفض 400 صريح، لا فشل صامت ولا استجواب غير المطلوب.
+       */
+      const requestedStores = typeof req.query.stores === 'string'
+        ? req.query.stores.split(',').map((value) => value.trim()).filter(Boolean)
+        : [];
+      const selectedStores = requestedStores.length === 0
+        ? SBASE_IMAGE_SOURCES
+        : SBASE_IMAGE_SOURCES.filter((source) => requestedStores.includes(source.id));
+      if (requestedStores.length > 0 && selectedStores.length === 0) {
+        return res.status(400).json({
+          success: false,
+          code: 'SBASE_STORE_UNKNOWN',
+          error: `مخزن صورة غير معروف: ${requestedStores.join(', ')}`,
+        });
+      }
+
+      /*
        * كل متجر صورة = نداء مستقلّ، بالتوازي، وكل واحد بزمنو/خطئو/كلفته.
        * متجر فاشل ما يمنعش الآخر: مجموعته تحمل كودها الحقيقي — ما تتفورتش
        * «لا نتائج» ولا تتخبّى في قائمة موحّدة.
        */
       const failures: Array<ReturnType<typeof sbaseImageFailureFrom>> = [];
       const groups: SbaseImageStoreGroup[] = await Promise.all(
-        SBASE_IMAGE_SOURCES.map(async (source) => {
+        selectedStores.map(async (source) => {
           const label = { id: source.id, label: source.label, vendor: source.vendor };
           try {
             const result = source.kind === 'server-actor'
@@ -412,7 +432,7 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
               : await searchApifyAliexpressByImage(imageBase64);
             const items = extractProducts(result.data, {
               arrays: [['items']],
-              limit: 20,
+              limit: APIFY_IMAGE_MAX_RESULTS,
               // كل نتيجة من هذا النداء = متجر الـactor نفسه، والنصّ يقولها.
               storeFallback: source.store,
             }).map((item) => ({ ...item, store: source.store }));

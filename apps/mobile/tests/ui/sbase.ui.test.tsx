@@ -36,6 +36,12 @@ jest.mock('../../src/features/shell/AppHeader', () => ({ AppHeader: () => null }
 jest.mock('../../src/state/session', () => ({ useSession: () => ({ status: 'signedOut', account: null }) }));
 
 jest.mock('expo-image-picker', () => ({
+  CameraType: { back: 'back', front: 'front' },
+  requestCameraPermissionsAsync: jest.fn(async () => ({ granted: true })),
+  launchCameraAsync: jest.fn(async () => ({
+    canceled: false,
+    assets: [{ uri: 'file:///photo.jpg', fileName: 'camera.jpg', mimeType: 'image/jpeg' }],
+  })),
   launchImageLibraryAsync: jest.fn(async () => ({
     canceled: false,
     assets: [{ uri: 'file:///photo.jpg', fileName: 'photo.jpg', mimeType: 'image/jpeg' }],
@@ -70,7 +76,7 @@ const SOURCES = {
   image: {
     id: '1688', label: '1688 · photo', vendor: '1688.com',
     supports: { ...supports, image: true }, store: '1688', storeFromResults: false, configured: true,
-    endpoint: 'https://topapi--image-search-1688-api.apify.actor/search', costUsd: 0.004,
+    endpoint: 'https://topapi--image-search-1688-api.apify.actor/search', costUsd: 0.001,
   },
 };
 
@@ -175,7 +181,7 @@ const IMAGE_RESULT = {
   durationMs: 900,
   totalMs: 1100,
   endpoint: 'https://topapi--image-search-1688-api.apify.actor/search',
-  costUsd: 0.004,
+  costUsd: 0.001,
   fetchedAt: new Date().toISOString(),
 };
 
@@ -228,7 +234,7 @@ describe('S Base — un champ, deux boutiques en filtre', () => {
     }));
 
     expect(await screen.findByText('Mini traceur GPS')).toBeTruthy();
-    expect(await screen.findByTestId('sbase-response-time')).toHaveTextContent(/1,2 s/);
+    expect(await screen.findByTestId('sbase-response-time')).toHaveTextContent(/812/);
     // Le groupe 1688 porte son temps.
     expect(screen.getByTestId('sbase-group-1688-meta')).toHaveTextContent(/812 ms/);
     // MOQ et fournisseur sont affichés : c'est du commerce de gros.
@@ -356,15 +362,19 @@ describe('S Base — photo (1688, sans SerpApi)', () => {
     await screen.findByTestId('sbase-source-1688');
     fireEvent.press(screen.getByTestId('sbase-photo'));
 
-    await waitFor(() => expect(imageMock).toHaveBeenCalledWith({
-      uri: 'file:///photo.jpg', name: 'photo.jpg', type: 'image/jpeg',
-    }));
+    // نداء لكل مخزن على حدة (تعمير تدريجي): الافتراضي 1688.
+    await waitFor(() => expect(imageMock).toHaveBeenCalledWith(
+      { uri: 'file:///photo.jpg', name: 'camera.jpg', type: 'image/jpeg' },
+      { stores: ['1688'] },
+    ));
+    // الكاميرا هي من التقطت فعلاً (المدخل الأساسي — قرار المالك).
+    expect(require('expo-image-picker').launchCameraAsync).toHaveBeenCalled();
 
     expect(await screen.findByText('Traceur GPS 1688')).toBeTruthy();
     expect(screen.getByText('Traceur GPS Guangzhou')).toBeTruthy();
     expect(screen.getByTestId('sbase-image-summary')).toHaveTextContent(/2 résultats/);
     // Le coût de l'appel est affiché (aucune dépense invisible) : 0,004 $ chez l'actor image.
-    expect(screen.getByTestId('sbase-image-spend')).toHaveTextContent(/0,004/);
+    expect(screen.getByTestId('sbase-image-spend')).toHaveTextContent(/0,001/);
 
     // Filtre construit sur les fournisseurs présents dans les résultats.
     fireEvent.press(screen.getByTestId('sbase-store-1688'));
@@ -408,28 +418,80 @@ describe('S Base — photo (1688, sans SerpApi)', () => {
    * chaque magasin porte sa vérité (résultats/temps, ou code + « échec non
    * facturé »), et une ligne AliExpress ouvre le lien d'origine — pas de fiche.
    */
-  it('photo multi-magasins : chaque magasin dit sa vérité, la ligne AliExpress ouvre le lien', async () => {
-    imageMock.mockResolvedValue({
-      ...IMAGE_RESULT,
-      items: [
-        item('Traceur GPS 1688', { store: '1688', seller: 'Shenzhen T' }),
-        item('Fraises artificielles', { store: 'aliexpress', url: 'https://www.aliexpress.com/item/1005012800262062.html' }),
-      ],
-      groups: [
-        { source: { id: '1688', label: '1688 · photo', vendor: '1688.com' }, status: 'ok', count: 1, items: [], durationMs: 2100, error: null, costUsd: 0.004 },
-        { source: { id: 'aliexpress', label: 'AliExpress · photo', vendor: 'aliexpress.com' }, status: 'error', count: 0, items: [], durationMs: 0, error: { code: 'SBASE_IMAGE_RATE_LIMITED', message: '429' }, costUsd: 0 },
-      ],
+  it('photo multi-magasins : un appel par magasin (progressif), Ali échoue et le dit, 1688 remplit son groupe', async () => {
+    const IMAGE_STORES = {
+      ...SOURCES,
+      image: {
+        ...SOURCES.image,
+        stores: [
+          { id: '1688', label: '1688 · photo', vendor: '1688.com', costUsd: 0.001 },
+          { id: 'aliexpress', label: 'AliExpress · photo', vendor: 'aliexpress.com', costUsd: 0.02 },
+        ],
+      },
+    };
+    sourcesMock.mockResolvedValue(IMAGE_STORES);
+    // النداءان منفصلان (تعمير تدريجي): كل مخزن يردّ بحقيقته — Ali يرفض، و1688 تجيب.
+    imageMock.mockImplementation((_file: unknown, options?: { stores?: string[] }) => {
+      if (options?.stores?.[0] === 'aliexpress') {
+        return Promise.reject(Object.assign(new Error('429'), { code: 'SBASE_IMAGE_RATE_LIMITED' }));
+      }
+      return Promise.resolve({
+        ...IMAGE_RESULT,
+        channel: IMAGE_STORES.image,
+        items: [item('Traceur GPS 1688', { store: '1688', seller: 'Shenzhen T' })],
+        count: 1,
+        stores: ['1688'],
+        groups: [{ source: { id: '1688', label: '1688 · photo', vendor: '1688.com' }, status: 'ok', count: 1, items: [], durationMs: 2100, error: null, costUsd: 0.001 }],
+      });
     });
     const view = mount();
     await screen.findByTestId('sbase-source-1688');
     fireEvent.press(screen.getByTestId('sbase-photo'));
 
     expect(await screen.findByTestId('sbase-image-store-1688')).toHaveTextContent(/1688 · photo · 1/);
+    // Ali رفض: صفّه يحمل الكود الحقيقي و«échec non facturé»، و1688 تكمّل عادي.
     expect(screen.getByTestId('sbase-image-store-aliexpress')).toHaveTextContent(/SBASE_IMAGE_RATE_LIMITED/);
     expect(screen.getByTestId('sbase-image-store-aliexpress')).toHaveTextContent(/échec non facturé/);
-    // Le filtre propose les deux magasins reçus, et la ligne AliExpress est là.
-    expect(screen.getByTestId('sbase-store-aliexpress')).toBeTruthy();
-    expect(screen.getByText('Fraises artificielles')).toBeTruthy();
+    // الفاتورة = الناجح فقط: 0.001 — الفاشل مجّاني.
+    expect(screen.getByTestId('sbase-image-spend')).toHaveTextContent(/0,001/);
+    // فشل Ali وحده ليس فشلاً كلياً: لا بطاقة خطأ عامة.
+    expect(screen.queryByTestId('sbase-error')).toBeNull();
+    view.unmount();
+  });
+
+  it('skeleton pendant l\'attente : le gabarit gris apparaît par magasin, puis se remplit', async () => {
+    // نداء معلّق: القوالب تظهر فوراً وتستمر حتى الوصول.
+    imageMock.mockImplementation(() => new Promise(() => {}));
+    const view = mount();
+    await screen.findByTestId('sbase-source-1688');
+    fireEvent.press(screen.getByTestId('sbase-photo'));
+    expect(await screen.findByTestId('sbase-skeleton-1688')).toBeTruthy();
+    expect(screen.getByTestId('sbase-skeleton-1688-0')).toBeTruthy();
+    // النتيجة لم تصل بعد: لا بطاقة نتيجة ولا «aucun résultat».
+    expect(screen.queryByTestId('sbase-group-1688')).toBeNull();
+    expect(screen.getByTestId('sbase-image-summary')).toHaveTextContent(/Recherche en cours/);
+    view.unmount();
+  });
+
+  it('skeleton par boutique pour la recherche par mot-clé aussi', async () => {
+    searchMock.mockImplementation(() => new Promise(() => {}));
+    const view = mount();
+    fireEvent.changeText(await screen.findByTestId('sbase-query'), 'traceur');
+    fireEvent.press(screen.getByTestId('sbase-submit'));
+    expect(await screen.findByTestId('sbase-skeleton-1688')).toBeTruthy();
+    expect(screen.getByTestId('sbase-summary')).toHaveTextContent(/Recherche en cours/);
+    view.unmount();
+  });
+
+  it("caméra refusée : le message parle d'autorisation, pas d'une photo invalide", async () => {
+    const picker = require('expo-image-picker');
+    picker.requestCameraPermissionsAsync.mockResolvedValueOnce({ granted: false });
+    const view = mount();
+    await screen.findByTestId('sbase-source-1688');
+    fireEvent.press(screen.getByTestId('sbase-photo'));
+    const message = await screen.findByTestId('sbase-error-message');
+    expect(message).toHaveTextContent(/autorisation caméra|صلاحية الكاميرا/);
+    expect(imageMock).not.toHaveBeenCalled();
     view.unmount();
   });
 

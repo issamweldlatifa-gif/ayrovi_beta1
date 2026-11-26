@@ -192,15 +192,15 @@ describe('S Base — catalogue', () => {
     }
   });
 
-  test('الفاتورة المنشورة تُقال: بحث ≈0.0848$ · بطاقة ≈0.00899$ · صورة ≈0.002$', () => {
+  test('الفاتورة المنشورة تُقال: بحث ≈0.02495$ · بطاقة ≈0.00899$ · صورة ≈0.001$', () => {
     expect(SBASE_SOURCES.filter((source) => source.defaultEnabled).map((source) => source.id)).toEqual(['1688']);
     const dev = findSbaseSource('1688')!;
     expect(dev.billedPerResult).toBe(false);
-    expect(dev.costUsd).toBeCloseTo(0.0848, 5);
+    expect(dev.costUsd).toBeCloseTo(0.02495, 5);
     expect(dev.detail?.costUsd).toBeCloseTo(0.00899, 5);
     // التفاصيل تقبل المعرّف ولا الرابط — بلا بدنيل منفصل (موثّق على الـactor).
     expect(dev.detail?.requiresId).toBe(false);
-    expect(SBASE_IMAGE_SOURCE.costUsd).toBeCloseTo(0.002, 5);
+    expect(SBASE_IMAGE_SOURCE.costUsd).toBeCloseTo(0.001, 5);
   });
 
   test('قناة الصورة = عدة متاجر (1688 Server actor + AliExpress run actor) على نفس المفتاح', () => {
@@ -328,25 +328,31 @@ describe('S Base — استخراج البطاقة', () => {
 });
 
 describe('S Base — مزوّد Apify', () => {
-  test('الأثمنة المنشورة تُحسب من الموثّق: بحث 0.0848$ · تفاصيل 0.00899$ · صورة 1688=0.002$ · صورة AliExpress=0.02$', () => {
-    expect(APIFY_SEARCH_COST_USD).toBeCloseTo(0.005 + 20 * 3.99 / 1000, 5);
+  test('الأثمنة المنشورة تُحسب من الموثّق: بحث 0.02495$ · تفاصيل 0.00899$ · صورة 1688=0.001$ · صورة AliExpress=0.02$', () => {
+    expect(APIFY_SEARCH_COST_USD).toBeCloseTo(0.005 + 5 * 3.99 / 1000, 5);
     expect(APIFY_DETAIL_COST_USD).toBeCloseTo(0.005 + 3.99 / 1000, 5);
-    expect(APIFY_IMAGE_COST_USD).toBeCloseTo(10 * 0.2 / 1000, 5);
+    expect(APIFY_IMAGE_COST_USD).toBeCloseTo(5 * 0.2 / 1000, 5);
     // AliExpress: 0.02$/صورة بحثت — موثّقة على صفحة الـactor، والفشل/الصفر مجّاني.
     expect(APIFY_ALIEXPRESS_IMAGE_COST_USD).toBe(0.02);
   });
 
-  test('حدّ نتائج الصورة: افتراضي 10، ومفتاح البيئة APIFY_IMAGE_MAX_RESULTS يضبطه (قرار المالك: 5–10 تكفي)', async () => {
-    const prev = process.env.APIFY_IMAGE_MAX_RESULTS;
+  test('حدود النتائج: افتراضي 5 لكل actor (قرار المالك: 4–5 قوالب)، ومفاتيح البيئة تضبطهما', async () => {
+    const prevImage = process.env.APIFY_IMAGE_MAX_RESULTS;
+    const prevSearch = process.env.APIFY_SEARCH_MAX_ITEMS;
     try {
-      process.env.APIFY_IMAGE_MAX_RESULTS = '5';
+      process.env.APIFY_IMAGE_MAX_RESULTS = '8';
+      process.env.APIFY_SEARCH_MAX_ITEMS = '12';
       vi.resetModules();
       const mod = await import('../src/sbase/apify.js');
-      expect(mod.APIFY_IMAGE_MAX_RESULTS).toBe(5);
-      expect(mod.APIFY_IMAGE_COST_USD).toBeCloseTo(0.001, 5);
+      expect(mod.APIFY_IMAGE_MAX_RESULTS).toBe(8);
+      expect(mod.APIFY_IMAGE_COST_USD).toBeCloseTo(8 * 0.2 / 1000, 5);
+      expect(mod.APIFY_SEARCH_MAX_ITEMS).toBe(12);
+      expect(mod.APIFY_SEARCH_COST_USD).toBeCloseTo(0.005 + 12 * 3.99 / 1000, 5);
     } finally {
-      if (prev === undefined) delete process.env.APIFY_IMAGE_MAX_RESULTS;
-      else process.env.APIFY_IMAGE_MAX_RESULTS = prev;
+      if (prevImage === undefined) delete process.env.APIFY_IMAGE_MAX_RESULTS;
+      else process.env.APIFY_IMAGE_MAX_RESULTS = prevImage;
+      if (prevSearch === undefined) delete process.env.APIFY_SEARCH_MAX_ITEMS;
+      else process.env.APIFY_SEARCH_MAX_ITEMS = prevSearch;
       vi.resetModules();
     }
   });
@@ -385,7 +391,7 @@ describe('S Base — مزوّد Apify', () => {
       expect((call.init?.headers as Record<string, string>).Authorization).toBe(`Bearer ${APIFY_KEY}`);
     }
     const runInput = JSON.parse(String(calls[0].init?.body));
-    expect(runInput).toMatchObject({ mode: 'search', keywords: ['water bottle'], sortType: 'normal', maxItems: 20 });
+    expect(runInput).toMatchObject({ mode: 'search', keywords: ['water bottle'], sortType: 'normal', maxItems: 5 });
 
     expect(result.runId).toBe('run_9');
     expect(result.costUsd).toBe(APIFY_SEARCH_COST_USD);
@@ -537,7 +543,7 @@ describe('S Base — مزوّد Apify', () => {
     expect(calls).toHaveLength(1);
     const sent = JSON.parse(String(calls[0].init?.body));
     // base64 خام كما يوثّقه الـactor، والحدّ الأقصى للنتائج + استبعاد الإعلانات.
-    expect(sent).toEqual({ imageBase64: 'QUJDREVG', maxResults: 10, excludeAds: true });
+    expect(sent).toEqual({ imageBase64: 'QUJDREVG', maxResults: 5, excludeAds: true });
     expect(calls[0].url).not.toContain(APIFY_KEY);
     // المفتاح في الترويسة فقط.
     expect((calls[0].init?.headers as Record<string, string>).Authorization).toBe(`Bearer ${APIFY_KEY}`);
@@ -612,9 +618,9 @@ describe('S Base — المسارات', () => {
     expect(response.body.data.configured).toBe(true);
     expect(response.body.data.sources).toHaveLength(1);
     expect(response.body.data.sources[0]).toMatchObject({ id: '1688', actor: 'sourabhbgp~1688-scraper' });
-    expect(response.body.data.sources[0].costUsd).toBeCloseTo(0.0848, 5);
+    expect(response.body.data.sources[0].costUsd).toBeCloseTo(0.02495, 5);
     expect(response.body.data.image.endpoint).toBe('https://topapi--image-search-1688-api.apify.actor/search');
-    expect(response.body.data.image.costUsd).toBeCloseTo(0.002, 5);
+    expect(response.body.data.image.costUsd).toBeCloseTo(0.001, 5);
     // متاجر الصورة معلنة بأثمنتهم المنشورة: 1688 ثم AliExpress.
     expect(response.body.data.image.stores.map((store: { id: string }) => store.id)).toEqual(['1688', 'aliexpress']);
     expect(response.body.data.image.stores[1].costUsd).toBeCloseTo(0.02, 5);
@@ -648,7 +654,7 @@ describe('S Base — المسارات', () => {
     expect(groups).toHaveLength(1);
     const group = groups[0];
     expect(group).toMatchObject({ status: 'ok', count: 1, error: null, cached: false, async: true });
-    expect(group.costUsd).toBeCloseTo(0.0848, 5);
+    expect(group.costUsd).toBeCloseTo(0.02495, 5);
     expect(group.items[0]).toMatchObject({
       id: '1089329678023', amount: 15.5, currency: 'CNY', moq: '1',
     });
@@ -791,7 +797,7 @@ describe('S Base — المسارات', () => {
         const sent = JSON.parse(String(init?.body));
         // الصورة تُرسل base64 خام — لا data URI، لا رابط photo/… عندنا.
         expect(sent.imageBase64).toMatch(/^[A-Za-z0-9+/=]+$/);
-        expect(sent.maxResults).toBe(10);
+        expect(sent.maxResults).toBe(5);
         expect(sent.excludeAds).toBe(true);
         return new Response(JSON.stringify({
           ok: true, count: 1,
@@ -810,7 +816,7 @@ describe('S Base — المسارات', () => {
         const input = JSON.parse(String(init?.body));
         expect(input.imagesBase64).toHaveLength(1);
         expect(input.imagesBase64[0]).toMatch(/^[A-Za-z0-9+/=]+$/);
-        expect(input.maxResultsPerImage).toBe(10);
+        expect(input.maxResultsPerImage).toBe(5);
         expect(input.shipTo).toBe('US');
         expect(input.currency).toBe('USD');
         return new Response(JSON.stringify({ data: { id: 'run_ae', status: 'READY', defaultDatasetId: 'ds_ae' } }), { status: 200 });
@@ -835,11 +841,11 @@ describe('S Base — المسارات', () => {
     expect(data).toMatchObject({ mode: 'image', count: 2, stores: ['1688', 'aliexpress'] });
     // كل متجر بمجموعته الحقيقية: النتائج والزمن والكلفة المنشورة.
     expect(data.groups).toHaveLength(2);
-    expect(data.groups[0]).toMatchObject({ source: { id: '1688' }, status: 'ok', count: 1, costUsd: 0.002, error: null });
+    expect(data.groups[0]).toMatchObject({ source: { id: '1688' }, status: 'ok', count: 1, costUsd: 0.001, error: null });
     expect(data.groups[1]).toMatchObject({ source: { id: 'aliexpress' }, status: 'ok', count: 1, costUsd: 0.02, error: null });
     expect(data.items[0]).toMatchObject({ store: '1688', title: 'Cross-border phone case', amount: 7.5, currency: 'CNY', moq: '50' });
-    // الفاتورة الكلية = مجموع المجموعات الناجحة فقط: 0.002 + 0.02.
-    expect(data.costUsd).toBeCloseTo(0.022, 5);
+    // الفاتورة الكلية = مجموع المجموعات الناجحة فقط: 0.001 + 0.02.
+    expect(data.costUsd).toBeCloseTo(0.021, 5);
     expect(data.photoExpiresAt).toBeUndefined();
     // كل نتيجة تفتح متجرها: فيش 1688 الداخلية، ورابط AliExpress الأصلي (بلا تفاصيل منشورة).
     expect(data.items[0].url).toBe('https://detail.1688.com/offer/927875250705.html');
@@ -847,6 +853,45 @@ describe('S Base — المسارات', () => {
     expect(data.items[1].url).toBe('https://www.aliexpress.com/item/1005012800262062.html');
     // المُقيّم/البائع غير منشورين في هذا الـactor ⇒ مُسجّلون ناقصين، بلا اختراع.
     expect(data.items[1].missing).toEqual(expect.arrayContaining(['rating', 'seller']));
+  });
+
+  test('التعمير التدريجي: ?stores=1688 يستجوب 1688 وحدها — AliExpress ما يُندَّىش أصلاً', async () => {
+    const calls = stubApify([
+      (url) => (url.includes('topapi--image-search-1688-api.apify.actor/search')
+        ? new Response(JSON.stringify({
+          ok: true, count: 1,
+          items: [{
+            offerId: '927875250705', title: '手机壳', titleEn: 'Cross-border phone case',
+            detailUrl: 'https://detail.1688.com/offer/927875250705.html', image: 'https://cbu01.alicdn.com/m.jpg',
+            price: 7.5, currency: 'CNY', minOrderQuantity: 50, supplier: { companyName: '佛山三丰' },
+          }],
+        }), { status: 200 })
+        : null),
+    ]);
+    const response = await request(app())
+      .post('/api/sbase/image?stores=1688')
+      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
+      .expect(200);
+    // الـactor المستبعد ما تُفتحش ولا صفحة من عنده — حصر صارم لا تخفية.
+    expect(calls.filter((call) => call.url.includes('aliexpress'))).toHaveLength(0);
+    const data = response.body.data;
+    expect(data.groups).toHaveLength(1);
+    expect(data.groups[0]).toMatchObject({ source: { id: '1688' }, status: 'ok', count: 1, costUsd: 0.001 });
+    expect(data.stores).toEqual(['1688']);
+    expect(data.costUsd).toBeCloseTo(0.001, 5);
+  });
+
+  test('?stores باسم غريب ⇒ 400 SBASE_STORE_UNKNOWN بلا أي نداء مدفوع', async () => {
+    const calls = stubApify([
+      () => new Response(JSON.stringify({ ok: true, count: 0, items: [] }), { status: 200 }),
+    ]);
+    const response = await request(app())
+      .post('/api/sbase/image?stores=khayr')
+      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
+      .expect(400);
+    expect(response.body.code).toBe('SBASE_STORE_UNKNOWN');
+    // الرفض المحلي قبل أي actor — صفر فاتورة.
+    expect(calls).toHaveLength(0);
   });
 
   test('متجر صورة فاشل لا يمنع الآخر: مجموعته تحمل كودها الحقيقي والفشل غير مفوتر', async () => {
@@ -871,13 +916,13 @@ describe('S Base — المسارات', () => {
     const data = response.body.data;
     expect(data.status).toBe('ok');
     expect(data.count).toBe(1);
-    expect(data.groups[0]).toMatchObject({ source: { id: '1688' }, status: 'ok', count: 1, costUsd: 0.002 });
+    expect(data.groups[0]).toMatchObject({ source: { id: '1688' }, status: 'ok', count: 1, costUsd: 0.001 });
     expect(data.groups[1]).toMatchObject({
       source: { id: 'aliexpress' }, status: 'error', count: 0, costUsd: 0,
       error: { code: 'SBASE_IMAGE_RATE_LIMITED' },
     });
     // الفاتورة = 1688 وحدها: الفشل ما يتخلّصش.
-    expect(data.costUsd).toBeCloseTo(0.002, 5);
+    expect(data.costUsd).toBeCloseTo(0.001, 5);
   });
 
   test('الصورة: صفوف فشل AliExpress الموثّقة كل واحدة بمعناها (no_matches مجّانية · image_error مرفوضة · failed فشل)', async () => {

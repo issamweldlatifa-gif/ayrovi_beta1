@@ -66,6 +66,8 @@ export const FAILURE_MESSAGE_KEYS: Record<string, string> = {
   SBASE_IMAGE_PROVIDER_UNKNOWN: 'sbase.err.imageUnknown',
   SBASE_IMAGE_UNKNOWN: 'sbase.err.imageUnknown',
   SBASE_IMAGE_NOT_CONFIGURED: 'sbase.err.imageNotConfigured',
+  // ── مدخل الكاميرا (التطبيق نفسه، لا الخادم) ─────────────────────────
+  SBASE_CAMERA_DENIED: 'sbase.err.cameraDenied',
   // ── قناة الكلمة (المزوّد الوحيد: Apify — نفس الجُمَل الصادقة) ────────
   APIFY_NOT_CONFIGURED: 'sbase.err.notConfigured',
   APIFY_UNAUTHORIZED: 'sbase.err.unauthorized',

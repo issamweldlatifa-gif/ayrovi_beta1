@@ -15,21 +15,20 @@
  *    متجرها، والفلتر يتبنى من المتاجر اللي رجّعتها الصورة نفسها.
  *  • ما فماش mic ولا زرّ ما يخدمش: كل أيقونة في الشريط عندها فعل حقيقي.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import type {
   SbaseGroup,
-  SbaseImagePayload,
+  SbaseImageStoreGroup,
   SbaseItem,
-  SbaseSearchPayload,
   SbaseSource,
 } from '@/api/sbase';
-import { fetchSbaseSources, searchSbase, searchSbaseImage } from '@/api/sbase';
+import { fetchSbaseItem, fetchSbaseSources, searchSbase, searchSbaseImage } from '@/api/sbase';
 import { AppImage } from '@/design/appImage';
 import { AppScreen } from '@/design/layout';
 import { LoadingBlock } from '@/design/states';
@@ -38,6 +37,7 @@ import { BRAND } from '@/design/tokens.generated';
 import { RADIUS } from '@/design/tokens.mobile';
 import { AppText, Button } from '@/design/ui';
 import { useT, type TranslationKey } from '@/i18n';
+import { SkeletonGroup } from './Skeleton';
 import {
   formatCallCost,
   formatDuration,
@@ -184,15 +184,39 @@ export function SbaseScreen() {
   const [selected, setSelected] = useState<string[]>([]);
   const [text, setText] = useState('');
   const [photo, setPhoto] = useState<PickedPhoto | null>(null);
-  const [keywordResult, setKeywordResult] = useState<SbaseSearchPayload | null>(null);
-  const [imageResult, setImageResult] = useState<SbaseImagePayload | null>(null);
+  /**
+   * التعمير التدريجي (قرار المالك 26/11 عصراً): **نداء لكل متجر على حدة** —
+   * كل مجموعة تعمّر قالبها عند وصولها، ما فماش انتظار دفعة واحدة. الحالة:
+   * `busy` = ما زال في الطريق (قوالب Skeleton)، و`groups` = ما وصل فعلاً.
+   */
+  const [keywordQuery, setKeywordQuery] = useState('');
+  const [keywordBusy, setKeywordBusy] = useState<string[]>([]);
+  const [keywordGroups, setKeywordGroups] = useState<SbaseGroup[]>([]);
+  const [imageBusy, setImageBusy] = useState<string[]>([]);
+  const [imageGroups, setImageGroups] = useState<SbaseImageStoreGroup[]>([]);
   const [failure, setFailure] = useState<{ code: string; message: string } | null>(null);
   const [stale, setStale] = useState(false);
   /** المستعمل لمس الاختيار: ما نرجّعوش لافتراضي فوق راسو. */
   const [touchedSelection, setTouchedSelection] = useState(false);
   const [storeFilter, setStoreFilter] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+
+  const busy = keywordBusy.length > 0 || imageBusy.length > 0;
+  const queryClient = useQueryClient();
+  /** مفاتيح التحميل المسبق المنجزة — ما نعاوووش ندفعو لنفس البطاقة مرّتين. */
+  const prefetched = useRef<Set<string>>(new Set());
+
+  // مخازن الصورة المعلنة من الخادم؛ غايبين ⇒ 1688 (الوحيدة التاريخية).
+  const imageStoreIds = useMemo(() => {
+    const advertised = sourcesQuery.data?.image?.stores?.map((store) => store.id) ?? [];
+    return advertised.length > 0 ? advertised : ['1688'];
+  }, [sourcesQuery.data]);
+  // تسميات المخازن كما يعلنها الخادم — صفوف الخطأ تحمل الاسم الرسمي لا الـid.
+  const imageStoreLabels = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const store of sourcesQuery.data?.image?.stores ?? []) map.set(store.id, store.label);
+    return map;
+  }, [sourcesQuery.data]);
 
   // Sélection par défaut = les boutiques grand public décidées côté serveur.
   useEffect(() => {
@@ -221,35 +245,106 @@ export function SbaseScreen() {
   const runKeyword = async () => {
     const query = text.trim();
     if (query.length < 2 || selected.length === 0) return;
-    setBusy(true); setFailure(null); setPhoto(null); setImageResult(null); setStoreFilter(null);
-    try {
-      const payload = await searchSbase({ q: query, sources: selected });
-      setKeywordResult(payload);
-      setStale(false);
-    } catch (error) {
-      const candidate = error as { code?: string; message?: string };
-      setFailure({ code: candidate?.code ?? 'SBASE_ERROR', message: candidate?.message ?? '' });
-      setKeywordResult(null);
-    } finally {
-      setBusy(false);
-    }
+    setFailure(null); setPhoto(null); setImageGroups([]); setImageBusy([]); setStoreFilter(null);
+    setStale(false);
+    setKeywordQuery(query);
+    setKeywordGroups([]);
+    setKeywordBusy([...selected]);
+    /** أخطاء النداءات المرمية — إن فشل **كل** المخازن نرفع بطاقة خطأ بإعادة محاولة. */
+    const thrown: Array<{ code: string; message: string }> = [];
+    await Promise.all(selected.map(async (sourceId) => {
+      const source = sources.find((entry) => entry.id === sourceId);
+      try {
+        const payload = await searchSbase({ q: query, sources: [sourceId] });
+        for (const group of payload.groups) {
+          setKeywordGroups((current) => [...current, {
+            ...group,
+            // المجموعة تُنسب لمتجر ندائها — حتى لو غيّر الخادم الاسم.
+            source: { ...group.source, id: sourceId, label: source?.label ?? group.source.label, vendor: source?.vendor ?? group.source.vendor },
+          }]);
+        }
+      } catch (error) {
+        const candidate = error as { code?: string; message?: string };
+        const failure = { code: candidate?.code ?? 'SBASE_ERROR', message: candidate?.message ?? '' };
+        thrown.push(failure);
+        setKeywordGroups((current) => [...current, {
+          source: {
+            id: sourceId, label: source?.label ?? sourceId, vendor: source?.vendor ?? '',
+            supports: source?.supports ?? { keyword: true, url: false, image: false, details: false, price: false, variants: false, barcode: false },
+          },
+          status: 'error', items: [], count: 0, durationMs: 0, cached: false, async: false,
+          error: failure,
+          costUsd: null, billedPerResult: false,
+        }]);
+      } finally {
+        setKeywordBusy((current) => current.filter((id) => id !== sourceId));
+      }
+    }));
+    if (thrown.length > 0 && thrown.length === selected.length) setFailure(thrown[0]);
   };
 
   const runImage = async (picked: PickedPhoto) => {
-    setBusy(true); setFailure(null); setKeywordResult(null); setStoreFilter(null);
-    try {
-      const payload = await searchSbaseImage(picked);
-      setImageResult(payload);
-    } catch (error) {
-      const candidate = error as { code?: string; message?: string };
-      setFailure({ code: candidate?.code ?? 'SBASE_IMAGE_ERROR', message: candidate?.message ?? '' });
-      setImageResult(null);
-    } finally {
-      setBusy(false);
-    }
+    setFailure(null); setKeywordGroups([]); setKeywordBusy([]); setStoreFilter(null);
+    setImageGroups([]);
+    setImageBusy([...imageStoreIds]);
+    const thrown: Array<{ code: string; message: string }> = [];
+    await Promise.all(imageStoreIds.map(async (storeId) => {
+      try {
+        const payload = await searchSbaseImage(picked, { stores: [storeId] });
+        // نداء هذا النداء = مجموعة واحدة؛ غايبة الشكل ⇒ نبنيها من الحقول الموثّقة.
+        const group: SbaseImageStoreGroup = payload.groups?.[0] ?? {
+          source: { id: storeId, label: payload.channel.label, vendor: payload.channel.vendor },
+          status: payload.status === 'ok' ? 'ok' : 'empty',
+          count: payload.count,
+          items: payload.items,
+          durationMs: payload.durationMs,
+          error: null,
+          costUsd: payload.costUsd ?? 0,
+        };
+        setImageGroups((current) => [...current, { ...group, source: { ...group.source, id: storeId } }]);
+      } catch (error) {
+        const candidate = error as { code?: string; message?: string };
+        const failure = { code: candidate?.code ?? 'SBASE_IMAGE_ERROR', message: candidate?.message ?? '' };
+        thrown.push(failure);
+        setImageGroups((current) => [...current, {
+          source: { id: storeId, label: imageStoreLabels.get(storeId) ?? storeId, vendor: '' },
+          status: 'error', count: 0, items: [], durationMs: 0,
+          error: failure,
+          costUsd: 0,
+        }]);
+      } finally {
+        setImageBusy((current) => current.filter((id) => id !== storeId));
+      }
+    }));
+    if (thrown.length > 0 && thrown.length === imageStoreIds.length) setFailure(thrown[0]);
   };
 
+  /** الكاميرا هي المدخل الأساسي (قرار المالك، مرجع Alibaba): فتح مباشر + صلاحية صادقة. */
   const pickPhoto = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      setFailure({ code: 'SBASE_CAMERA_DENIED', message: '' });
+      return;
+    }
+    const picked = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+      allowsEditing: false,
+      cameraType: ImagePicker.CameraType.back,
+    });
+    if (picked.canceled || !picked.assets?.[0]) return;
+    const asset = picked.assets[0];
+    const file: PickedPhoto = {
+      uri: asset.uri,
+      name: asset.fileName ?? 'camera.jpg',
+      type: asset.mimeType ?? 'image/jpeg',
+    };
+    setPhoto(file);
+    await runImage(file);
+  };
+
+  /** الألبوم يبقى متاحاً كمدخل ثانوي بجانب الكاميرا. */
+  const pickAlbum = async () => {
     const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
     if (picked.canceled || !picked.assets?.[0]) return;
     const asset = picked.assets[0];
@@ -262,6 +357,36 @@ export function SbaseScreen() {
     await runImage(file);
   };
 
+  /**
+   * تحميل مسبق بالتوازي (قرار المالك: «الوصف والبطاقات على نفس المسار»):
+   * أول بطاقتين من كل دفعة تُجلب تفاصيلها في الخلفية فتُفتح الفيشة فوراً.
+   * ما نعرضش فشل التحميل المسبق — الفتح الفعلي هو اللي يقول حقيقته.
+   */
+  useEffect(() => {
+    const candidates: Array<{ source: string; item: SbaseItem }> = [
+      ...keywordGroups
+        .filter((group) => group.status === 'ok' && group.source.supports.details)
+        .flatMap((group) => group.items.slice(0, 2).map((item) => ({ source: group.source.id, item }))),
+      ...imageGroups
+        .filter((group) => group.status === 'ok' && group.source.id === '1688')
+        .flatMap((group) => group.items.slice(0, 2).map((item) => ({ source: '1688', item }))),
+    ];
+    for (const { source, item } of candidates) {
+      if (!item.id) continue;
+      const key = `${source}|${item.id}|${item.title}`;
+      if (prefetched.current.has(key)) continue;
+      prefetched.current.add(key);
+      // Promise.resolve: النداء قد لا يعد بشيء في بيئة الاختبار — لا انهيار أبداً.
+      void Promise.resolve(fetchSbaseItem({ source, id: item.id, title: item.title, url: item.url }))
+        .then((payload) => {
+          if (payload?.detail) {
+            queryClient.setQueryData(['sbase', 'item', source, item.id ?? '', item.title ?? ''], payload);
+          }
+        })
+        .catch(() => { /* الفتح الفعلي يعيد النداء ويقول الحقيقة إن فشلت */ });
+    }
+  }, [keywordGroups, imageGroups, queryClient]);
+
   const toggleSource = (id: string) => {
     // Décocher la dernière boutique est un choix légitime : on ne le réécrase pas.
     setTouchedSelection(true);
@@ -269,15 +394,21 @@ export function SbaseScreen() {
       const next = current.includes(id) ? current.filter((value) => value !== id) : [...current, id];
       return next;
     });
-    if (keywordResult) setStale(true);
+    if (keywordGroups.length > 0 || keywordBusy.length > 0) setStale(true);
   };
 
-  const groups = keywordResult
-    ? keywordResult.groups.filter((group) => selected.includes(group.source.id))
-    : [];
-  const imageItems = imageResult
-    ? imageResult.items.filter((item) => (storeFilter ? item.store === storeFilter : true))
-    : [];
+  /** ما وصل فعلاً من المخازن المختارة — وما في الطريق يُعرض كقوالب Skeleton. */
+  const groups = keywordGroups.filter((group) => selected.includes(group.source.id));
+  const imageLanded = imageGroups;
+  const imageItems = imageLanded
+    .flatMap((group) => group.items)
+    .filter((item) => (storeFilter ? item.store === storeFilter : true));
+  const imageCount = imageLanded.reduce((sum, group) => sum + group.count, 0);
+  const imageTotalMs = imageLanded.reduce((max, group) => Math.max(max, group.durationMs), 0);
+  const imageCost = imageLanded.reduce((sum, group) => sum + (group.costUsd ?? 0), 0);
+  const keywordCount = groups.reduce((sum, group) => sum + group.count, 0);
+  const keywordTotalMs = groups.reduce((max, group) => Math.max(max, group.durationMs), 0);
+  const keywordMissing = [...new Set(groups.flatMap((group) => group.items.flatMap((item) => item.missing)))];
 
   return <AppScreen testID="sbase-hub" hasBottomBar>
     <View style={styles.hero}>
@@ -296,6 +427,16 @@ export function SbaseScreen() {
         disabled={busy || !imageChannel?.configured}
         style={[styles.barIcon, { opacity: busy || !imageChannel?.configured ? theme.opacity.subtle : 1 }]}>
         <Ionicons name="camera-outline" size={theme.iconSize.md} color={theme.colors.ink} />
+      </Pressable>
+      {/* الألبوم مدخل ثانوي بجانب الكاميرا (مرجع Alibaba: كاميرا + ألبوم). */}
+      <Pressable
+        testID="sbase-album"
+        accessibilityRole="button"
+        accessibilityLabel={t('sbase.album')}
+        onPress={() => { void pickAlbum(); }}
+        disabled={busy || !imageChannel?.configured}
+        style={[styles.barIcon, { opacity: busy || !imageChannel?.configured ? theme.opacity.subtle : 1 }]}>
+        <Ionicons name="images-outline" size={theme.iconSize.sm} color={theme.colors.ink} />
       </Pressable>
       <TextInput
         testID="sbase-query"
@@ -330,7 +471,7 @@ export function SbaseScreen() {
         testID="sbase-photo-clear"
         accessibilityRole="button"
         accessibilityLabel={t('sbase.photoClear')}
-        onPress={() => { setPhoto(null); setImageResult(null); setFailure(null); }}
+        onPress={() => { setPhoto(null); setImageGroups([]); setImageBusy([]); setFailure(null); }}
         style={styles.barIcon}>
         <Ionicons name="close-outline" size={theme.iconSize.sm} color={theme.colors.ink} />
       </Pressable>
@@ -373,31 +514,38 @@ export function SbaseScreen() {
       {t('sbase.searching')} {formatDuration(elapsed)}
     </AppText> : null}
 
-    {/* ── نتائج الكلمة: مجموعة لكل متجر ────────────────────────────────── */}
-    {keywordResult ? <View style={styles.section}>
+    {/* ── نتائج الكلمة: نداء لكل متجر، وكل مجموعة تعمّر عند وصولها ──────── */}
+    {keywordQuery ? <View style={styles.section}>
       <AppText testID="sbase-summary" variant="bodyStrong">
         {/* « Aucun résultat » pour un échec, c'est mentir sur ce qui s'est passé. */}
-        {keywordResult.count > 0
-          ? t('sbase.results', { count: keywordResult.count })
-          : keywordResult.groups.length > 0 && keywordResult.groups.every((group) => group.status === 'error')
+        {keywordCount > 0
+          ? t('sbase.results', { count: keywordCount })
+          : groups.length > 0 && groups.every((group) => group.status === 'error') && keywordBusy.length === 0
             ? t('sbase.allFailed')
-            : t('sbase.empty', { query: keywordResult.query })}
+            : keywordBusy.length > 0
+              ? t('sbase.searching')
+              : groups.length > 0
+                ? t('sbase.empty', { query: keywordQuery })
+                : t('sbase.searching')}
       </AppText>
-      <AppText testID="sbase-response-time" variant="caption" color={theme.colors.muted}>
+      {groups.length > 0 ? <AppText testID="sbase-response-time" variant="caption" color={theme.colors.muted}>
         {/* المزوّد اللي جاوب فعلاً يظهر باسمه — ما ننسبش النتيجة لمزوّد ما جاوبش. */}
-        {t('sbase.responseTime')} · {formatDuration(keywordResult.totalMs)} · {t('sbase.viaProvider', { provider: keywordResult.provider ?? 'S Base' })}
-      </AppText>
-      {keywordResult.missingFields.length > 0 ? <View style={styles.chips}>
-        {keywordResult.missingFields.map((field) => {
+        {t('sbase.responseTime')} · {formatDuration(keywordTotalMs)} · {t('sbase.viaProvider', { provider: 'apify' })}
+      </AppText> : null}
+      {keywordMissing.length > 0 ? <View style={styles.chips}>
+        {keywordMissing.map((field) => {
           const key = missingLabelKey(field);
           return <Chip key={field} label={`${t('sbase.missingTitle')} : ${key ? t(key as TranslationKey) : field}`} active={false} />;
         })}
       </View> : null}
     </View> : null}
 
+    {/* قوالب Skeleton للمخازن ما زالت في الطريق — نفس قرار المالك. */}
+    {keywordBusy.map((sourceId) => <SkeletonGroup key={`kw-${sourceId}`} sourceId={sourceId} />)}
+
     {groups.map((group) => <View key={group.source.id} testID={`sbase-group-${group.source.id}`} style={styles.group}>
       <GroupHeader group={group} />
-      {group.status === 'empty' ? <AppText variant="caption" color={theme.colors.muted}>{t('sbase.empty', { query: keywordResult?.query ?? '' })}</AppText> : null}
+      {group.status === 'empty' ? <AppText variant="caption" color={theme.colors.muted}>{t('sbase.empty', { query: keywordQuery })}</AppText> : null}
       {group.items.map((item, index) => <ResultRow
         key={`${group.source.id}-${item.url ?? item.id ?? index}`}
         item={item}
@@ -411,17 +559,23 @@ export function SbaseScreen() {
       </AppText> : null}
     </View>)}
 
-    {/* ── نتائج الصورة: فلتر بالمتجر، والنتائج تحمل مصدرها ──────────────── */}
-    {imageResult ? <View style={styles.section}>
+    {/* ── نتائج الصورة: نداء لكل مخزن، قوالب ثم تعمير عند الوصول ────────── */}
+    {imageBusy.length > 0 || imageGroups.length > 0 ? <View style={styles.section}>
       <AppText testID="sbase-image-summary" variant="bodyStrong">
-        {imageResult.count > 0 ? t('sbase.results', { count: imageResult.count }) : t('sbase.photoEmpty')}
+        {imageCount > 0
+          ? t('sbase.results', { count: imageCount })
+          : imageBusy.length > 0
+            ? t('sbase.searching')
+            : imageGroups.every((group) => group.status === 'error') && imageGroups.length > 0
+              ? t('sbase.allFailed')
+              : t('sbase.photoEmpty')}
       </AppText>
-      <AppText testID="sbase-image-spend" variant="caption" color={theme.colors.muted}>
-        {t('sbase.responseTime')} · {formatDuration(imageResult.totalMs)}
-        {formatCallCost(imageResult.costUsd) ? ` · ${t('sbase.cost')} ${formatCallCost(imageResult.costUsd)}` : ''}
-      </AppText>
+      {imageGroups.length > 0 ? <AppText testID="sbase-image-spend" variant="caption" color={theme.colors.muted}>
+        {t('sbase.responseTime')} · {formatDuration(imageTotalMs)}
+        {formatCallCost(imageCost) ? ` · ${t('sbase.cost')} ${formatCallCost(imageCost)}` : ''}
+      </AppText> : null}
       {/* الحقيقة لكل متجر صورة: زمنو ونتائجه أو خطؤه — ومتجر فاشل غير مفوتر. */}
-      {(imageResult.groups ?? []).map((group) => <AppText
+      {imageGroups.map((group) => <AppText
         key={group.source.id}
         testID={`sbase-image-store-${group.source.id}`}
         variant="caption"
@@ -430,16 +584,18 @@ export function SbaseScreen() {
           ? `${group.source.label} · ${group.error?.code ?? 'ERROR'} · ${t('sbase.groupUnbilled')}`
           : `${group.source.label} · ${group.count} · ${formatDuration(group.durationMs)}`}
       </AppText>)}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+      {/* قوالب المخازن ما زالت في الطريق. */}
+      {imageBusy.map((storeId) => <SkeletonGroup key={`img-${storeId}`} sourceId={storeId} />)}
+      {imageGroups.length > 0 ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         <Chip testID="sbase-store-all" label={t('sbase.allStores')} active={storeFilter === null} onPress={() => setStoreFilter(null)} />
-        {[...new Set(imageResult.items.map((item) => item.store).filter((store): store is string => Boolean(store)))]
+        {[...new Set(imageItems.map((item) => item.store).filter((store): store is string => Boolean(store)))]
           .map((store) => <Chip
             key={store}
             testID={`sbase-store-${store}`}
             label={store}
             active={storeFilter === store}
             onPress={() => setStoreFilter(store)} />)}
-      </ScrollView>
+      </ScrollView> : null}
       {imageItems.map((item, index) => <ResultRow
         key={`img-${item.url ?? item.id ?? index}`}
         item={item}
@@ -449,7 +605,7 @@ export function SbaseScreen() {
         onOpen={() => openResult(item.store === '1688', item.store ?? '1688', item)} />)}
     </View> : null}
 
-    {!busy && !failure && !keywordResult && !imageResult && !sourcesQuery.isLoading ? <View
+    {!busy && !failure && keywordGroups.length === 0 && imageGroups.length === 0 && !sourcesQuery.isLoading ? <View
       style={[styles.card, { borderColor: theme.colors.lineControl, backgroundColor: theme.colors.surface }]}>
       <AppText variant="bodySmall" color={theme.colors.muted}>{t('sbase.idle')}</AppText>
     </View> : null}
@@ -459,8 +615,9 @@ export function SbaseScreen() {
 const styles = StyleSheet.create({
   grow: { flex: 1 },
   hero: { gap: 6, paddingBottom: 10 },
+  /* الشريط: كاميرا + ألبوم + حقل + بحث — الكاميرا هي المدخل الأساسي. */
   bar: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
     borderWidth: 2, borderRadius: RADIUS.xl, paddingHorizontal: 6, paddingVertical: 4,
   },
   barIcon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
@@ -481,7 +638,14 @@ const styles = StyleSheet.create({
   group: { marginTop: 16, gap: 4 },
   groupHead: { gap: 2, paddingBottom: 6, borderBottomWidth: StyleSheet.hairlineWidth },
   priceLine: { flexDirection: 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' },
-  item: { flexDirection: 'row', gap: 12, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth },
-  itemImage: { width: 72, height: 72, borderRadius: RADIUS.sm, overflow: 'hidden' },
+  /*
+   * بطاقة قالب (مرجع Alibaba من المالك): إطار كامل + صورة كبيرة + كتلة سعر —
+   * ليست سطراً مائياً في قائمة، بل قالب بمناطق واضحة: صورة/عنوان/ثمن/مورّد.
+   */
+  item: {
+    flexDirection: 'row', gap: 12, padding: 10, marginBottom: 10,
+    borderWidth: 1, borderRadius: RADIUS.md, backgroundColor: 'transparent',
+  },
+  itemImage: { width: 88, height: 88, borderRadius: RADIUS.md, overflow: 'hidden' },
   openLink: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
 });

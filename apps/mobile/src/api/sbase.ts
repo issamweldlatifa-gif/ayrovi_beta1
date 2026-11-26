@@ -49,6 +49,11 @@ export interface SbaseImageChannel {
   supports: SbaseSupports;
   storeFromResults: boolean;
   configured: boolean;
+  /**
+   * مخازن الصورة المعلنة من الخادم (`/sources` ⇒ `image.stores[]`) — الشاشة
+   * تبعت **نداء لكل مخزن** على حدة (تعمير تدريجي)، وغايبها ⇒ 1688 الافتراضية.
+   */
+  stores?: Array<{ id: string; label: string; vendor: string; actor?: string; costUsd?: number | null }>;
 }
 
 export interface SbaseSourcesPayload {
@@ -223,12 +228,14 @@ export async function searchSbase(
   });
 }
 
-/** صورة من المعرض → نتائج 1688 المتشابهة، عبر خادمنا. */
+/** صورة → نتائج متشابهة عبر خادمنا. `stores` يحدّد المخازن في هذا النداء
+ * (تعمير تدريجي: نداء لكل مخزن، وكل ردّ يُعرض فور وصوله). */
 export function searchSbaseImage(
   file: { uri: string; name: string; type: string },
-  options?: RequestOptions,
+  options?: RequestOptions & { stores?: string[] },
 ): Promise<SbaseImagePayload> {
-  return apiUploadFileData<SbaseImagePayload>('/api/sbase/image', 'image', file, {
+  const stores = options?.stores?.length ? `?stores=${encodeURIComponent(options.stores.join(','))}` : '';
+  return apiUploadFileData<SbaseImagePayload>(`/api/sbase/image${stores}`, 'image', file, {
     // قياس حيّ 26/11/2026: 31 ثانية فعلياً — سقف الخادم 75 ثانية، وننتظرها بصدق.
     timeoutMs: options?.timeoutMs ?? 85_000,
     signal: options?.signal,

@@ -66,8 +66,8 @@ portent leur magasin, le filtre de l'écran se construit sur les magasins reçus
 
 | Magasin | Actor | Entrée | Coût publié |
 |---|---|---|---|
-| `1688` | `topapi/image-search-1688-api` (Server actor) | `{imageBase64, maxResults:10, excludeAds:true}` — POST unique | 0,20 $/1000 résultats ⇒ **≈ 0,002 $/photo (10 résultats)**, gratuit si 0 |
-| `aliexpress` | `piotrv1001/aliexpress-image-search-scraper` (run actor, 320+ utilisateurs) | `imagesBase64:[…]` accepte **base64 directement**, `maxResultsPerImage:10`, `shipTo:US`, `currency:USD` | **0,02 $/photo** (1 page jusqu'à 60 résultats) ; **image en échec ou sans résultats = gratuite** |
+| `1688` | `topapi/image-search-1688-api` (Server actor) | `{imageBase64, maxResults:5, excludeAds:true}` — POST unique | 0,20 $/1000 résultats ⇒ **≈ 0,001 $/photo (5 résultats)**, gratuit si 0 |
+| `aliexpress` | `piotrv1001/aliexpress-image-search-scraper` (run actor, 320+ utilisateurs) | `imagesBase64:[…]` accepte **base64 directement**, `maxResultsPerImage:5`, `shipTo:US`, `currency:USD` | **0,02 $/photo** (1 page jusqu'à 60 résultats) ; **image en échec ou sans résultats = gratuite** |
 
 Pages de sortie documentées de l'actor AliExpress : `productId, title, url,
 image, price, currency, rating, sold, soldText, isBestMatch…` — MOQ/vendeur non
@@ -103,8 +103,8 @@ des magasins cochés : il ne peut pas promettre plus que la plus pauvre.
 ## 5. Coût et garde-fous
 
 - **Coûts publiés par le fournisseur** (affichés tels quels) :
-  recherche ≈ **0,0848 $** (0,005 $/run + 20 lignes × 3,99 $/1000) ·
-  fiche ≈ **0,00899 $** · photo : **0,002 $** (1688, 10 résultats) + **0,02 $** (AliExpress)
+  recherche ≈ **0,02495 $** (0,005 $/run + 5 lignes × 3,99 $/1000) ·
+  fiche ≈ **0,00899 $** · photo : **0,001 $** (1688, 5 résultats) + **0,02 $** (AliExpress)
   ⇒ jusqu'à **0,024 $/photo**, chaque magasin gratuit si 0 résultat/failure.
 - Quotas serveur dédiés : 30 recherches /10 min, **12 photos /10 min** — séparés
   du quota Z Lens.
@@ -204,7 +204,8 @@ un appel échoué affiche « échec non facturé » au lieu d'un coût.
 | `APIFY_1688_ACTOR` | optionnel (défaut `sourabhbgp~1688-scraper`) |
 | `APIFY_IMAGE_ACTOR` | optionnel (défaut `topapi~image-search-1688-api`) |
 | `APIFY_ALIEXPRESS_IMAGE_ACTOR` | optionnel (défaut `piotrv1001~aliexpress-image-search-scraper`) |
-| `APIFY_IMAGE_MAX_RESULTS` | optionnel (défaut `10`, borné 1–50) — limite des résultats de recherche d'image (1688 + AliExpress) |
+| `APIFY_IMAGE_MAX_RESULTS` | optionnel (défaut `5`, borné 1–50) — limite des résultats d'image par magasin (1688 + AliExpress) |
+| `APIFY_SEARCH_MAX_ITEMS` | optionnel (défaut `5`, borné 1–50) — limite des résultats par mot-clé par acteur |
 | `SBASE_PROVIDER` | **obsolète depuis le commit 3** — le fournisseur est unique ; la variable n'a plus aucun effet |
 
 Vérification en direct (clé du propriétaire, sur le serveur publié) :
@@ -228,3 +229,24 @@ recherche visuelle** (CAPTCHA), et son mode d'entrée « raw bytes » n'est pas
 clairement utilisable via API. Coût 5 $/1000 résultats. À réintégrer dès que
 l'actor est fiable — un entrée dans `SBASE_IMAGE_SOURCES` + un traducteur
 + des tests suffisent.
+
+## Refonte de l'expérience (26/11 après-midi — décisions du propriétaire, appliquées)
+
+1. **Skeleton/Shimmer + remplissage progressif** : plus d'attente monolithique.
+   L'app lance **un appel par boutique** (mot-clé : `search {sources:[id]}` ·
+   photo : `POST /image?stores=<id>`) ; chaque gabarit gris animé
+   (`sbase-skeleton-<id>`) se remplit dès que SON groupe arrive. Le serveur
+   expose le filtre `?stores=` (noms inconnus ⇒ 400 `SBASE_STORE_UNKNOWN`,
+   strict). La fiche produit a son skeleton complet aussi (`SkeletonFiche`).
+2. **Caméra comme entrée principale** : l'icône ouvre directement
+   `launchCameraAsync` (dos, sans recadrage) ; permission refusée ⇒
+   `SBASE_CAMERA_DENIED` avec phrase dédiée. L'album reste une icône secondaire.
+3. **4–5 résultats par acteur, en cartes-modèles** : `APIFY_IMAGE_MAX_RESULTS`
+   et `APIFY_SEARCH_MAX_ITEMS` (défaut 5, borné 1–50). Cartes repensées
+   (référence Alibaba) : cadre + image 88 + bloc prix source/estimation TND.
+4. **Description + fiches en parallèle** : dès qu'une vague de résultats
+   arrive, les **2 premières cartes** par groupe partent en préchargement
+   (`fetchSbaseItem` en arrière-plan, remplissage du cache React Query) —
+   l'ouverture de la fiche est instantanée ; l'échec du préchargement reste
+   muet, l'ouverture réelle dit sa vérité. 1688 uniquement (les stores sans
+   fiche publiée ne coûtent rien de plus).

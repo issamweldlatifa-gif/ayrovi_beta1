@@ -65,22 +65,30 @@ export const APIFY_POLL_INTERVAL_MS = 1_000;
 export const APIFY_PRICE_PER_1000_RESULTS_USD = 3.99;
 export const APIFY_RUN_FEE_USD = 0.005;
 export const APIFY_IMAGE_PRICE_PER_1000_USD = 0.2;
-export const APIFY_SEARCH_MAX_ITEMS = 20;
 /**
- * حدّ نتائج بحث الصورة — قرار المالك (26/11): 5–10 نتائج تكفي، الافتراضي 10.
- * قابل للضبط بمتغيّر البيئة APIFY_IMAGE_MAX_RESULTS (مقطوع على 1–50 حسب موثّق
- * الـactor). يُطبَّق على مخزني الصورة معاً: 1688 (maxResults) وAliExpress
- * (maxResultsPerImage) — وأثمنة العرض مشتقّة منه لا مكتوبة يدوياً.
+ * حدّ نتائج بحث الصورة — قرار المالك (26/11 عصراً): **4–5 نتائج لكل actor**
+ * تكفي — قوالب منظّمة لا متصفّح مئات النتائج. الافتراضي 5، قابل للضبط بمتغيّر
+ * البيئة APIFY_IMAGE_MAX_RESULTS (مقطوع 1–50 حسب موثّق الـactor). يُطبَّق على
+ * مخزني الصورة معاً: 1688 (maxResults) وAliExpress (maxResultsPerImage) —
+ * وأثمنة العرض مشتقّة منه لا مكتوبة يدوياً.
  */
 const APIFY_IMAGE_MAX_RESULTS_ENV = Number(process.env.APIFY_IMAGE_MAX_RESULTS);
 export const APIFY_IMAGE_MAX_RESULTS = Number.isFinite(APIFY_IMAGE_MAX_RESULTS_ENV) && APIFY_IMAGE_MAX_RESULTS_ENV >= 1
   ? Math.min(50, Math.floor(APIFY_IMAGE_MAX_RESULTS_ENV))
-  : 10;
-/** بحث = run + 20 صفّ: 0.005 + 20×3.99/1000 = 0.0848$ — الثمن المنشور على صفحة الـactor. */
+  : 5;
+/**
+ * حدّ نتائج البحث بالكلمة لكل actor — نفس قرار المالك (4–5 قوالب منظّمة).
+ * APIFY_SEARCH_MAX_ITEMS للتجاوز (مقطوع 1–50 حسب موثّق الـactor).
+ */
+const APIFY_SEARCH_MAX_ITEMS_ENV = Number(process.env.APIFY_SEARCH_MAX_ITEMS);
+export const APIFY_SEARCH_MAX_ITEMS = Number.isFinite(APIFY_SEARCH_MAX_ITEMS_ENV) && APIFY_SEARCH_MAX_ITEMS_ENV >= 1
+  ? Math.min(50, Math.floor(APIFY_SEARCH_MAX_ITEMS_ENV))
+  : 5;
+/** بحث = run + 5 صفوف: 0.005 + 5×3.99/1000 = 0.02495$ — من الأثمنة المنشورة على صفحة الـactor. */
 export const APIFY_SEARCH_COST_USD = Number((APIFY_RUN_FEE_USD + (APIFY_SEARCH_MAX_ITEMS / 1000) * APIFY_PRICE_PER_1000_RESULTS_USD).toFixed(5));
 /** تفاصيل = run + صفّ واحد: 0.005 + 3.99/1000 = 0.00899$. */
 export const APIFY_DETAIL_COST_USD = Number((APIFY_RUN_FEE_USD + (1 / 1000) * APIFY_PRICE_PER_1000_RESULTS_USD).toFixed(5));
-/** صورة = 10 نتائج × 0.20/1000 = 0.002$ — والمصدر ما يفوتر إذا 0 نتيجة. */
+/** صورة = 5 نتائج × 0.20/1000 = 0.001$ — والمصدر ما يفوتر إذا 0 نتيجة. */
 export const APIFY_IMAGE_COST_USD = Number(((APIFY_IMAGE_MAX_RESULTS / 1000) * APIFY_IMAGE_PRICE_PER_1000_USD).toFixed(5));
 
 /** حدّ جسم الطلب الموثّق لactor الصورة (بايت) — نتجاوزه بضغط محلي مجّاني. */

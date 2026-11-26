@@ -21,11 +21,11 @@ import { fetchSbaseItem } from '@/api/sbase';
 import { AppImage } from '@/design/appImage';
 import { AppScreen } from '@/design/layout';
 import { goBack } from '@/design/navigation';
-import { LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { RADIUS } from '@/design/tokens.mobile';
 import { AppText, Button } from '@/design/ui';
 import { useT, type TranslationKey } from '@/i18n';
+import { SkeletonFiche } from './Skeleton';
 import { formatCallCost, formatDuration, formatItemPrice, formatTND, missingLabelKey } from './sbaseLogic';
 
 function priceLabel(payload: SbaseDetailPayload, fallback: string): string {
@@ -63,7 +63,8 @@ export function SbaseItemScreen({
       </View>
     </View>
 
-    {query.isLoading ? <LoadingBlock /> : null}
+    {/* قالب الواجهة أثناء الجلب — لا دُوّامة عامة (قرار المالك: Skeleton/Shimmer). */}
+    {query.isLoading ? <SkeletonFiche /> : null}
 
     {query.isError ? <View testID="sbase-item-error" style={[styles.card, { borderColor: theme.colors.lineControl, backgroundColor: theme.colors.surface }]}>
       <AppText variant="bodyStrong" color={theme.status.danger.fg} accessibilityRole="alert">
