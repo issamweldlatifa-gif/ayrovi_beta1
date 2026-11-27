@@ -1,0 +1,65 @@
+{
+  "_provenance": "SOORCE API probe — GET https://soorce.net/api/search?keyword=test — 2026-11-27 — fetched verbatim via platform fetcher (GET only). Public response, no auth, no mutation. Trimmed to meta + first 2 items (full items array had 20).",
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "page": 1,
+    "page_size": 20,
+    "total_count": 2000,
+    "has_next_page": true,
+    "keyword": "测试仪",
+    "items": [
+      {
+        "item_id": "1014996257354",
+        "title": "能事恒利新款网络电话BNC三合一网络测试仪 POE防烧多功能检测仪",
+        "img": "https://cbu01.alicdn.com/img/ibank/O1CN01JYWrQa1l3xyZOiojN_!!2209173834764-0-cib.jpg",
+        "price": 12.51,
+        "currency": "USD",
+        "price_info": { "price": 12.51, "sale_price": 12.51, "origin_price": 12.51 },
+        "category_path": [],
+        "moq": "2",
+        "quantity_begin": "2",
+        "quantity_prices": [{ "begin_num": 2, "price": "65.00" }],
+        "goods_score": null,
+        "sale_info": { "orders_count": 9, "sale_quantity": "已售1400+件" },
+        "delivery_info": { "area_from": ["广东", "深圳市"] },
+        "shop_info": { "is_super_factory": false, "shop_years": 7, "score_info": { "composite_score": null } },
+        "item_repurchase_rate": "50%",
+        "one_piece_min_order": false,
+        "is_ad": false,
+        "soorce_priced": true
+      },
+      {
+        "item_id": "611332695266",
+        "title": "ph值测试仪ph测试笔便携式0.01精度数显酸碱度计水质检测笔批发",
+        "img": "https://cbu01.alicdn.com/img/ibank/O1CN01SFkzsZHjfwK3FPpA_!!2207241035552-0-cib.jpg",
+        "price": 1.84,
+        "currency": "USD",
+        "price_info": { "price": 1.84, "sale_price": 1.84, "origin_price": 1.84 },
+        "category_path": ["10208", "10211", "1033903"],
+        "moq": "1",
+        "quantity_begin": "1",
+        "quantity_prices": [{ "begin_num": 1, "price": "8.50" }],
+        "goods_score": "5.0",
+        "sale_info": { "orders_count": 9972, "sale_quantity": "全网10万+件" },
+        "delivery_info": { "area_from": ["广东", "深圳市"] },
+        "shop_info": { "is_super_factory": false, "shop_years": 7, "score_info": { "composite_score": "5.0" } },
+        "item_repurchase_rate": "30%",
+        "one_piece_min_order": true,
+        "is_ad": false,
+        "soorce_priced": true
+      }
+    ]
+  },
+  "_observations": [
+    "keyword echo = Chinese: 'test' was translated to '测试仪' (tester) before querying upstream.",
+    "item_id = 1688 offer ID scheme; img = 1688 CDN (cbu01.alicdn.com/img/ibank) hotlinked.",
+    "quantity_prices values (65.00, 8.50) are CNY tier prices from 1688 — NOT converted (public USD price is separate).",
+    "sale_info.sale_quantity keeps raw Chinese strings (已售…件 / 全网…件).",
+    "delivery_info.area_from = Chinese provinces (广东/浙江).",
+    "shop_info: shop_years + is_super_factory + composite_score = 1688 shop trust fields.",
+    "item_repurchase_rate = 1688 repurchase-rate field verbatim.",
+    "is_ad marks upstream ads; soorce_priced marks Soorce's own USD pricing.",
+    "No supplier identity/shop name in the public payload — anonymized by design."
+  ]
+}
