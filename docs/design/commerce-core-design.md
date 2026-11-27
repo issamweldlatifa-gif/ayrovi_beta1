@@ -223,7 +223,7 @@ allocation_i = depositTND × (subtotal_i / total)          ← داخلي فقط
 | 1 | **Content** | `POST /cart/catalog` + `/cart/catalog/look` | موجودة ✓ | أحداث القمع الموجودة | أكواد السلة الحالية |
 | 2 | **Z Lens** | `POST /api/cart/items` + `priceToken` | موجودة ✓ | funnel موجود | `INVALID_ZAYROVIX_PRICE_TOKEN`, `PRICE_*` |
 | 3 | **AYWEBS** | اكتشاف حيّ (`/capture`, `/product/resolve`, `/price-quote`) → سلّة اختيار بأدلة → **الجسر `POST /cart/bridge-to-zayrovi`** (بنقل idempotent حتى عند كل إضافة `routes.ts:992–1001`) | موجودة ✓ | `cart.bridge_to_zayrovi` audit | `PRICE_CHANGED`, `VARIANT_UNAVAILABLE`, `OUT_OF_STOCK`, `PRICE_UNAVAILABLE`, `CART_LOCKED` |
-| 4 | **S BASE** | `POST /api/cart/items` بلا توكن ⇒ `PENDING_MANUAL` | موجودة ✓ (26/11) | funnel موجود | `INVALID_CART_ITEM`, `PRICE_*` |
+| 4 | **S BASE** | `POST /api/cart/items` بلا توكن ⇒ `PENDING_MANUAL` | **cart-add: ACTIVE** (26/11 — `add1752`: زرّ «زيد للسلّة» + `buildSbaseCartPayload` + `addSbaseToCart`، اختبارات 21/21، APK أخضر جربه المالك) — **تنفيذ sourcing: PLANNED** [v2.3] | funnel موجود | `INVALID_CART_ITEM`, `PRICE_*` |
 
 **عقد التنفيذ (الجديد — P2):** عند checkout الموحّد، Order Engine يُنشئ Master +
 الفرعية، وOrchestration:
@@ -360,7 +360,14 @@ ZAYROVI Commerce Core – Architecture & Business Logic Approval v1.0
    محوّله فقط من يترجم إلى مخطط السطر (§2.1) وعقود الأحداث (§3).
 2. **المحوّل يعلن ولا ينفّذ**: يصرّح `origin/lane/سياسة التسعير/أكواد الفشل/أحداثه`
    في `integration_registry` (جدول تكوين جديد صغير: origin، mapping الlane،
-   وحدة المحوّل، حالة active/suspended) — القيم توسّعية بلا enum مغلق.
+   وحدة المحوّل، **state: PLANNED | IN_DEVELOPMENT | ACTIVE | SUSPENDED**) —
+   القيم توسّعية بلا enum مغلق.
+
+**2bis. [v2.3] قاعدة دورة حياة المحوّلات (تثبيت المالك):** «وجود عقد تكامل لأي
+مدخل **لا يعني** أن التكامل منفّذ». كل محوّل يحمل حالة صريحة، ولا يُعتبر
+**مدخلاً تجارياً فعالاً** إلا في حالة ACTIVE — وهي لا تُمنح إلا بعد **اختبار
+تكامل ناجح + اعتماد المالك**. هذا يمنع الخلط الأبدية بين ما **صمّمناه**،
+وما **بدأنا تنفيذه**، وما **يعمل فعلاً** — خصوصاً مع التوسع لأوروبا والتجار.
 3. **المداخل الأربعة الحالية هي المحوّلات v1 نفسها** — ما هو مبنٍ اليوم يُسمّى
    ويُحدُّ ولا يُعاد بناؤه: محوّل الكتالوج (`/cart/catalog*`) · محوّل Lens
    (`/cart/items` + توكن) · محوّل aywebs (الجسر) · محوّل S BASE (`/cart/items`
@@ -772,6 +779,15 @@ T8: تغيير المسار بعد PAID مرفوض بكل الطرق. [v2] مو�
 | §9 D3 | موافق مبدئياً | §9 + §9.1 |
 | §10 D7 | موافق مبدئياً + Checkout Lock + Idempotency | §10.4 (آلة المسار + 409 + PR لكل متجر + T6–T8) |
 | §11/§12 | تحديث بعد الإغلاق | هذا الجدول + §11 |
+
+**[v2.3] تصحيح حالة S BASE بعد سؤال المالك المباشر (27/11):** التمييز الثلاثي
+معتمد — **الاكتشاف** نشِط (بحث صورة/كلمة Apify) · **المدخل التجاري للسلة**
+ACTIVE فعلاً ومُختبراً (الدليل أعلاه في §3) — وليس «غير مرتبط» كما خُيف，
+ولكن **مسار التنفيذ** (مراجعة المورّد، تأكيد التوريد، الشراء، الشحن والتتبع)
+PLANNED بالكامل: سطر MANUAL يدخل الدفع بالثقة المقبولة وتُدار مراجعته في سير
+الطلبات العام للباك-أوفيس — **بلا أداة sourcing مخصّصة بعد**. والقاعدة
+المعتمدة: النواة تُختبر بالمداخل ACTIVE، وربط تنفيذ S BASE مرحلة مستقلة بعد
+اعتماد Core — استقلالية مشروع S BASE دون جعل Core معتمداً على اكتماله.
 
 **موقف توقيع المالك (بعد المراجعة الثالثة):** لا Approval v1.0 الآن، ولا
 بدء برمجة P1، ولا هجرات قاعدة بيانات — **قبل المراجعة النهائية** لهذه v2.2
