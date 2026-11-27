@@ -31,6 +31,16 @@ import {
   type SbaseSupports,
 } from './descriptors';
 import { SbaseError } from './errors';
+
+/** عقد توفر المتغيّرات — نوع محلي بنيوي مطابق لكاتب zayrovix المحقون من
+ * نقطة التركيب (server.ts هو مفتاح الحدود المشروع للمراجع، لا sbase). */
+type SbaseAvailability = 'available' | 'unavailable' | 'unknown';
+export interface SbaseVariantContractInput {
+  attribute: string;
+  productAvailability: SbaseAvailability;
+  source?: string | null;
+  variants: Array<{ value: string; color?: string | null; availability: SbaseAvailability; reason: string }>;
+}
 import {
   apifyConfigured,
   apifyImageBase64,
@@ -202,6 +212,12 @@ export interface SbaseRouterOptions {
    * المصدر فقط وتقول «تقدير غير متوفّر» — ما نخترعوش معدّلاً.
    */
   getPricingRules?: () => PricingRules;
+  /**
+   * كاتب عقد توفر المتغيّرات — يُحقن من نقطة التركيب (server.ts، مفتاح الحدود)
+   * لأن العزل المعماري لـS Base يمنع استيراد zayrovix من ملفات القالب.
+   * بلا محقون: التفاصيل تعمل بلا عقد والحارس يظل صادقاً كما هو.
+   */
+  recordVariantContract?: (productKey: string, contract: SbaseVariantContractInput, checkedAt?: string) => void;
 }
 
 export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
@@ -211,6 +227,38 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
     { amount: item.amount, currency: item.currency, title: item.title, includeLocalDelivery: false },
   );
   /** Sur la fiche d'un produit, la ligne est seule : le transport local compte. */
+  /* عقد المتغيّرات (نمط الجسر: recordVariantContract المستوردة كمكتبة):
+     ما أثبته الخادم فعلاً عند إعداد الفيش يُسجَّل — فيُقبل اختيار الزبون
+     عند الإضافة لأن التوفر قرأ من المصدر، لا لأن الحارس يتساهل. الضرب
+     التبادلي (مقاس×لون) يجعل التوليفات المركّبة مقبولة كما تنشرها المصادر. */
+  const recordVariantContractFn = options.recordVariantContract;
+  const recordDetailVariantContract = (detail: SbaseDetail, checkedAt?: string): void => {
+    if (!recordVariantContractFn) return; // بلا محقون: لا عقد — والحارس يظل صادقاً
+    try {
+      if (!detail.url) return;
+      const sizeGroup = detail.variants.find((group) => /size|taille|مقاس|尺码/i.test(group.name));
+      const colorGroup = detail.variants.find((group) => /color|couleur|لون|颜色/i.test(group.name));
+      const sizes = sizeGroup ? sizeGroup.values.filter((value) => value.available !== false).map((value) => value.label) : [null];
+      const colors = colorGroup ? colorGroup.values.filter((value) => value.available !== false).map((value) => value.label) : [null];
+      const unavailable = detail.variants.some((group) => group.values.some((value) => value.available === false));
+      const variants = sizes.flatMap((size) => colors.map((color) => ({
+        value: size ?? color ?? '',
+        color: color ?? null,
+        availability: (unavailable ? 'unavailable' : 'available') as SbaseAvailability,
+        reason: [sizeGroup?.name, colorGroup?.name].filter(Boolean).join(' · ') || 'Options',
+      }))).filter((variant) => variant.value !== '');
+      recordVariantContractFn(detail.url, {
+        attribute: detail.variants[0]?.name ?? 'Options',
+        productAvailability: (detail.availability === 'out_of_stock' ? 'unavailable'
+          : detail.availability === 'in_stock' ? 'available' : 'unknown') as SbaseAvailability,
+        source: 'sbase',
+        variants,
+      }, checkedAt ?? new Date().toISOString());
+    } catch (error) {
+      console.warn('[SBase] variant contract failed', error instanceof Error ? error.message : error);
+    }
+  };
+
   const estimateDetail = (detail: SbaseDetail): SbasePriceEstimate | null => estimateSbasePrice(
     options.getPricingRules?.() ?? null,
     {
@@ -343,6 +391,7 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
     const cacheKey = `apify|${source.id}|${id ?? ''}|${url ?? ''}|${title}`;
     const hit = detailCache.get(cacheKey);
     if (hit && Date.now() - hit.at < SBASE_CACHE_TTL_MS) {
+      recordDetailVariantContract(hit.detail, new Date(hit.at).toISOString());
       return res.json({
         success: true,
         data: {
@@ -357,6 +406,7 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
     try {
       const run = await runApifyDetail({ id, url });
       const detail = extractDetail(run.data);
+      recordDetailVariantContract(detail);
       if (detailCache.size >= SBASE_CACHE_MAX) {
         const oldest = detailCache.keys().next().value;
         if (oldest) detailCache.delete(oldest);

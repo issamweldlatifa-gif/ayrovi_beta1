@@ -4,6 +4,7 @@ import { formerBrandCompat } from './services/formerBrandCompat';
 import { publicationShareHtml } from './services/publicationShare';
 import 'dotenv/config';
 import { validateQuoteSecret } from './zayrovix/priceQuote';
+import { recordVariantContract } from './zayrovix/services/variantAvailability';
 validateQuoteSecret();
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
@@ -601,7 +602,13 @@ app.use('/api/v1/aywebs', createAyWebsRouter(db, scraper));
  * maison : on lui passe seulement de quoi lire ses règles (aucune écriture, aucune
  * commande créée par S Base).
  */
-app.use('/api/sbase', createSbaseRouter({ getPricingRules: () => db.getPricingRules() }));
+app.use('/api/sbase', createSbaseRouter({
+  getPricingRules: () => db.getPricingRules(),
+  /* عقد توفر المتغيّرات: ما تثبته فiche S Base من المصدر يُسجَّل — فيُقبل
+     اختيار الزبون (لون/مقاس) عند الإضافة لأن التوفر قرأ فعلاً، لا تساهلاً. */
+  recordVariantContract: (productKey, contract, checkedAt) =>
+    recordVariantContract(productKey, contract, checkedAt),
+}));
 app.use('/api', createApiRouter(db, scraper, visionExtractor));
 
 /*
