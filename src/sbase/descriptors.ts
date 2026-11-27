@@ -18,7 +18,6 @@
  * الأثمنة كلها **منشورة** على صفحات Apify وتظهر في الشاشة كما هي — ما نلمّسهاش.
  */
 import {
-  APIFY_ALIEXPRESS_IMAGE_COST_USD,
   APIFY_DETAIL_COST_USD,
   APIFY_IMAGE_COST_USD,
   APIFY_SEARCH_COST_USD,
@@ -101,9 +100,6 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
  *
  *   • `1688` — Server actor بPOST واحد بbase64، ما فماش run ولا dataset؛
  *     الردّ في نفس الطلب ({ok, count, items[], meta})، مجّاني إذا 0 نتيجة.
- *   • `aliexpress` — run actor يقبل base64 مباشرة (`imagesBase64`)؛
- *     0.02$/صورة، مجّانية إذا 0 نتيجة أو فشل. بلا MOQ/بائع منشورين —
- *     الحقول الغايبة تبقى غايبة (`missing`).
  *
  * أسماء الـactors القابلة للتجاوز بمتغيّرات البيئة تُقرأ في `apify.ts` وقت النداء.
  */
@@ -120,18 +116,10 @@ export const SBASE_IMAGE_SOURCES = [
     supports: { keyword: false, url: false, image: true, details: false, price: true, variants: false, barcode: false },
     storeFromResults: false,
   },
-  {
-    id: 'aliexpress',
-    label: 'AliExpress · photo',
-    vendor: 'aliexpress.com',
-    actor: 'piotrv1001~aliexpress-image-search-scraper',
-    /** run actor: POST runs → poll → dataset (نفس آلة البحث بالكلمة). */
-    kind: 'run' as const,
-    costUsd: APIFY_ALIEXPRESS_IMAGE_COST_USD,
-    store: 'aliexpress' as const,
-    supports: { keyword: false, url: false, image: true, details: false, price: true, variants: false, barcode: false },
-    storeFromResults: false,
-  },
+  /* AliExpress خرج من مصادر S BASE (قرار المالك 27/11 — هوية المصادر:
+     AYWEBS = Global Retail Shopping، S BASE = China Wholesale & Sourcing).
+     Ali في ZAYROVI تُدار من AYWEBS (محوّل كامل + متصفّح داخلي) — هنا تكرار.
+     العودة إن احتاجت: سطر واحد وسيط — الدوال في apify.ts بقيت. */
 ];
 
 /** القناة الأولى (1688) تبقى معروضة كما هي للتوافق — المصدر الكامل في `SBASE_IMAGE_SOURCES`. */

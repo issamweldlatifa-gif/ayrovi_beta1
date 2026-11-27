@@ -223,7 +223,7 @@ describe('S Base — un champ, deux boutiques en filtre', () => {
     // Alibaba.com retirée, comme les 6 autres : le serveur n'en décrit qu'une.
     expect(screen.queryByTestId('sbase-source-alibaba')).toBeNull();
     expect(screen.queryByTestId('sbase-source-amazon')).toBeNull();
-    expect(screen.queryByTestId('sbase-source-aliexpress')).toBeNull();
+    expect(screen.queryByTestId('sbase-source-aliexpress')).toBeNull(); // خروج Ali نهائياً (قرار الهوية)
     view.unmount();
   });
 
@@ -463,25 +463,27 @@ describe('S Base — photo (1688, sans SerpApi)', () => {
   });
 
   /*
-   * 26/11/2026 — la photo part sur PLUSIEURS magasins (1688 + AliExpress) :
+   * 26/11/2026 — la photo part sur PLUSIEURS magasins (1688 + second store) :
    * chaque magasin porte sa vérité (résultats/temps, ou code + « échec non
    * facturé »), et une ligne AliExpress ouvre le lien d'origine — pas de fiche.
    */
-  it('photo multi-magasins : un appel par magasin (progressif), Ali échoue et le dit, 1688 remplit son groupe', async () => {
+  it('photo multi-magasins : un appel par magasin (progressif), le second échoue et le dit, 1688 remplit son groupe', async () => {
+    /* مخزن ثانٍ افتراضي في الموك (Yiwugo المرشّح): سلوك التعمير التدريجي
+       للعميل يظل مُختبراً — الخادم الحي يعيد 1688 وحدها بعد قرار الهوية. */
     const IMAGE_STORES = {
       ...SOURCES,
       image: {
         ...SOURCES.image,
         stores: [
           { id: '1688', label: '1688 · photo', vendor: '1688.com', costUsd: 0.001 },
-          { id: 'aliexpress', label: 'AliExpress · photo', vendor: 'aliexpress.com', costUsd: 0.02 },
+          { id: 'yiwugo', label: 'Yiwugo · photo', vendor: 'yiwugo.com', costUsd: 0.002 },
         ],
       },
     };
     sourcesMock.mockResolvedValue(IMAGE_STORES);
-    // النداءان منفصلان (تعمير تدريجي): كل مخزن يردّ بحقيقته — Ali يرفض، و1688 تجيب.
+    // النداءان منفصلان (تعمير تدريجي): كل مخزن يردّ بحقيقته — الثاني يرفض، و1688 تجيب.
     imageMock.mockImplementation((_file: unknown, options?: { stores?: string[] }) => {
-      if (options?.stores?.[0] === 'aliexpress') {
+      if (options?.stores?.[0] === 'yiwugo') {
         return Promise.reject(Object.assign(new Error('429'), { code: 'SBASE_IMAGE_RATE_LIMITED' }));
       }
       return Promise.resolve({
@@ -500,8 +502,8 @@ describe('S Base — photo (1688, sans SerpApi)', () => {
     expect(await screen.findByText(/chaque boutique dit sa vérité/)).toBeTruthy();
     expect(await screen.findByTestId('sbase-image-store-1688')).toHaveTextContent(/1688 · photo · 1/);
     // Ali رفض: صفّه يحمل الكود الحقيقي و«échec non facturé»، و1688 تكمّل عادي.
-    expect(screen.getByTestId('sbase-image-store-aliexpress')).toHaveTextContent(/SBASE_IMAGE_RATE_LIMITED/);
-    expect(screen.getByTestId('sbase-image-store-aliexpress')).toHaveTextContent(/échec non facturé/);
+    expect(screen.getByTestId('sbase-image-store-yiwugo')).toHaveTextContent(/SBASE_IMAGE_RATE_LIMITED/);
+    expect(screen.getByTestId('sbase-image-store-yiwugo')).toHaveTextContent(/échec non facturé/);
     // الفاتورة = الناجح فقط: 0.001 — الفاشل مجّاني.
     expect(screen.getByTestId('sbase-image-spend')).toHaveTextContent(/0,001/);
     // فشل Ali وحده ليس فشلاً كلياً: لا بطاقة خطأ عامة.

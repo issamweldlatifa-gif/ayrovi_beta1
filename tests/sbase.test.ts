@@ -203,19 +203,14 @@ describe('S Base — catalogue', () => {
     expect(SBASE_IMAGE_SOURCE.costUsd).toBeCloseTo(0.001, 5);
   });
 
-  test('قناة الصورة = عدة متاجر (1688 Server actor + AliExpress run actor) على نفس المفتاح', () => {
-    expect(SBASE_IMAGE_SOURCES.map((source) => source.id)).toEqual(['1688', 'aliexpress']);
+  test('قناة الصورة = 1688 فقط (قرار الهوية 27/11: Ali بيتها AYWEBS)', () => {
+    expect(SBASE_IMAGE_SOURCES.map((source) => source.id)).toEqual(['1688']);
     // 1688: Server actor بPOST واحد بbase64 — ما فماش run ولا dataset.
     expect(SBASE_IMAGE_SOURCE.id).toBe('1688');
     expect(SBASE_IMAGE_SOURCE.kind).toBe('server-actor');
     expect(SBASE_IMAGE_SOURCE.actor).toBe('topapi~image-search-1688-api');
     expect(SBASE_IMAGE_SOURCE.store).toBe('1688');
-    // AliExpress: run actor يقبل base64 مباشرة (imagesBase64) — بلا رابط عمومي.
-    const ali = SBASE_IMAGE_SOURCES.find((source) => source.id === 'aliexpress')!;
-    expect(ali.kind).toBe('run');
-    expect(ali.actor).toBe('piotrv1001~aliexpress-image-search-scraper');
-    expect(ali.store).toBe('aliexpress');
-    expect(ali.costUsd).toBeCloseTo(0.02, 5);
+    // خروج Ali: كل بحث صورة 0.001$ فقط — حماية الرصيد (قرار الهوية).
     for (const source of SBASE_IMAGE_SOURCES) {
       expect(source.supports.image).toBe(true);
       // الصورة لا تفتح فيش داخلية لهذين الـactorين — التفاصيل قناة الكلمة.
@@ -622,8 +617,7 @@ describe('S Base — المسارات', () => {
     expect(response.body.data.image.endpoint).toBe('https://topapi--image-search-1688-api.apify.actor/search');
     expect(response.body.data.image.costUsd).toBeCloseTo(0.001, 5);
     // متاجر الصورة معلنة بأثمنتهم المنشورة: 1688 ثم AliExpress.
-    expect(response.body.data.image.stores.map((store: { id: string }) => store.id)).toEqual(['1688', 'aliexpress']);
-    expect(response.body.data.image.stores[1].costUsd).toBeCloseTo(0.02, 5);
+    expect(response.body.data.image.stores.map((store: { id: string }) => store.id)).toEqual(['1688']);
   });
 
   test('بلا مفتاح: 503 APIFY_NOT_CONFIGURED وبلا أي نداء', async () => {
@@ -789,7 +783,7 @@ describe('S Base — المسارات', () => {
     scrapedAt: '2026-10-20T06:02:28.652Z',
   };
 
-  test('الصورة تمرّ على المتجرين بالتوازي: base64 بلا نشر ولا سَبر، وكل متجر بمجموعته وكلفته', async () => {
+  test('الصورة تمرّ على 1688 وحدها: base64 بلا نشر ولا سَبر، ومجموعتها بكلفتها (قرار الهوية 27/11)', async () => {
     const calls = stubApify([
       (url, init) => {
         if (!url.includes('topapi--image-search-1688-api.apify.actor/search')) return null;
@@ -809,22 +803,6 @@ describe('S Base — المسارات', () => {
           meta: { totalMatches: 12, nextOffset: 1 },
         }), { status: 200 });
       },
-      (url, init) => {
-        if (!url.includes('/v2/acts/piotrv1001~aliexpress-image-search-scraper/runs')) return null;
-        expect(init?.method).toBe('POST');
-        // المدخل الموثّق: imagesBase64 + 10 نتائج (صفّ واحد) + السوق الموثّق US/USD.
-        const input = JSON.parse(String(init?.body));
-        expect(input.imagesBase64).toHaveLength(1);
-        expect(input.imagesBase64[0]).toMatch(/^[A-Za-z0-9+/=]+$/);
-        expect(input.maxResultsPerImage).toBe(5);
-        expect(input.shipTo).toBe('US');
-        expect(input.currency).toBe('USD');
-        return new Response(JSON.stringify({ data: { id: 'run_ae', status: 'READY', defaultDatasetId: 'ds_ae' } }), { status: 200 });
-      },
-      (url) => (url.includes('/v2/actor-runs/run_ae')
-        ? new Response(JSON.stringify({ data: { id: 'run_ae', status: 'SUCCEEDED', defaultDatasetId: 'ds_ae' } }), { status: 200 })
-        : null),
-      (url) => (url.includes('/v2/datasets/ds_ae/items') ? new Response(JSON.stringify([aliexpressRow]), { status: 200 }) : null),
     ]);
 
     const response = await request(app())
@@ -832,27 +810,19 @@ describe('S Base — المسارات', () => {
       .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
       .expect(200);
 
-    // نداء 1688 واحد (Server actor) + نداءات AliExpress الثلاثة (POST runs ثم GET run ثم GET dataset).
+    // نداء 1688 واحد (Server actor) — وخروج Ali: ما فماش أي نداء run/dataset إطلاقاً.
     expect(calls.filter((call) => call.url.includes('topapi--image-search-1688-api'))).toHaveLength(1);
-    expect(calls.filter((call) => call.url.includes('/v2/acts/piotrv1001~aliexpress-image-search-scraper/runs'))).toHaveLength(1);
-    expect(calls.filter((call) => call.url.includes('/v2/actor-runs/run_ae') || call.url.includes('/v2/datasets/ds_ae'))).toHaveLength(2);
+    expect(calls.filter((call) => call.url.includes('/v2/acts/') || call.url.includes('/v2/actor-runs/'))).toHaveLength(0);
     const data = response.body.data;
     expect(data.provider).toBe('apify');
-    expect(data).toMatchObject({ mode: 'image', count: 2, stores: ['1688', 'aliexpress'] });
-    // كل متجر بمجموعته الحقيقية: النتائج والزمن والكلفة المنشورة.
-    expect(data.groups).toHaveLength(2);
+    expect(data).toMatchObject({ mode: 'image', count: 1, stores: ['1688'] });
+    expect(data.groups).toHaveLength(1);
     expect(data.groups[0]).toMatchObject({ source: { id: '1688' }, status: 'ok', count: 1, costUsd: 0.001, error: null });
-    expect(data.groups[1]).toMatchObject({ source: { id: 'aliexpress' }, status: 'ok', count: 1, costUsd: 0.02, error: null });
     expect(data.items[0]).toMatchObject({ store: '1688', title: 'Cross-border phone case', amount: 7.5, currency: 'CNY', moq: '50' });
-    // الفاتورة الكلية = مجموع المجموعات الناجحة فقط: 0.001 + 0.02.
-    expect(data.costUsd).toBeCloseTo(0.021, 5);
+    // الفاتورة الكلية = 0.001 فقط — الرصيد يعيش 21 ضعفاً أطول للاستعلام.
+    expect(data.costUsd).toBeCloseTo(0.001, 5);
     expect(data.photoExpiresAt).toBeUndefined();
-    // كل نتيجة تفتح متجرها: فيش 1688 الداخلية، ورابط AliExpress الأصلي (بلا تفاصيل منشورة).
     expect(data.items[0].url).toBe('https://detail.1688.com/offer/927875250705.html');
-    expect(data.items[1]).toMatchObject({ store: 'aliexpress', amount: 1.09, currency: 'USD' });
-    expect(data.items[1].url).toBe('https://www.aliexpress.com/item/1005012800262062.html');
-    // المُقيّم/البائع غير منشورين في هذا الـactor ⇒ مُسجّلون ناقصين، بلا اختراع.
-    expect(data.items[1].missing).toEqual(expect.arrayContaining(['rating', 'seller']));
   });
 
   test('التعمير التدريجي: ?stores=1688 يستجوب 1688 وحدها — AliExpress ما يُندَّىش أصلاً', async () => {
@@ -894,35 +864,22 @@ describe('S Base — المسارات', () => {
     expect(calls).toHaveLength(0);
   });
 
-  test('متجر صورة فاشل لا يمنع الآخر: مجموعته تحمل كودها الحقيقي والفشل غير مفوتر', async () => {
+  test('فشل المزوّد لا يُتنكّر: المجموعة تحمل كودها الحقيقي والفشل غير مفوتر (مخزن وحيد)', async () => {
     stubApify([
-      (url) => (url.includes('topapi--image-search-1688-api.apify.actor/search')
-        ? new Response(JSON.stringify({
-          ok: true, count: 1,
-          items: [{
-            offerId: '927875250705', title: '手机壳', titleEn: 'Cross-border phone case',
-            detailUrl: 'https://detail.1688.com/offer/927875250705.html', image: 'https://cbu01.alicdn.com/m.jpg',
-            price: 7.5, currency: 'CNY', minOrderQuantity: 50, supplier: { companyName: '佛山三丰' },
-          }],
-        }), { status: 200 })
-        : null),
-      // AliExpress تردّ 429 — المجموعة تقولها كما هي، و1688 تكمّل عادي.
+      // 1688 تردّ 429 — المجموعة تقولها كما هي، والفاتورة صفر.
       () => new Response(JSON.stringify({ error: { type: 'slow-down' } }), { status: 429 }),
     ]);
     const response = await request(app())
       .post('/api/sbase/image')
       .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
-      .expect(200);
-    const data = response.body.data;
-    expect(data.status).toBe('ok');
-    expect(data.count).toBe(1);
-    expect(data.groups[0]).toMatchObject({ source: { id: '1688' }, status: 'ok', count: 1, costUsd: 0.001 });
-    expect(data.groups[1]).toMatchObject({
-      source: { id: 'aliexpress' }, status: 'error', count: 0, costUsd: 0,
-      error: { code: 'SBASE_IMAGE_RATE_LIMITED' },
+      .expect(429);
+    // المخزن الوحيد فاشل ⇒ الخطأ الصادق كاملاً: 429 بكوده، والمجموعة تحمل
+    // الحقيقة (groups في الردّ)، والفاتورة صفر — ما يتخفّاش في «لا نتائج».
+    expect(response.body.code).toBe('SBASE_IMAGE_RATE_LIMITED');
+    const groups = response.body.groups as Array<{ source: { id: string }; status: string; count: number; costUsd: number }>;
+    expect(groups[0]).toMatchObject({
+      source: { id: '1688' }, status: 'error', count: 0, costUsd: 0,
     });
-    // الفاتورة = 1688 وحدها: الفشل ما يتخلّصش.
-    expect(data.costUsd).toBeCloseTo(0.001, 5);
   });
 
   test('الصورة: صفوف فشل AliExpress الموثّقة كل واحدة بمعناها (no_matches مجّانية · image_error مرفوضة · failed فشل)', async () => {
@@ -941,14 +898,13 @@ describe('S Base — المسارات', () => {
       .rejects.toMatchObject({ code: 'APIFY_FAILED', status: 502 });
   });
 
-  test('الصورة: 0 نتيجة من المتجرين تُعرض «empty» — والفاتورة صفر (مجّاني عند الاثنين)', async () => {
+  test('الصورة: 0 نتائج تُعرض «empty» — والفاتورة صفر (مجّاني، قرار الهوية: مخزن وحيد)', async () => {
     stubApify([
       (url) => (url.includes('topapi--image-search-1688-api.apify.actor/search')
         ? new Response(JSON.stringify({
           ok: true, count: 0, items: [], meta: { totalMatches: 0, nextOffset: null, charged: { match: 0 } },
         }), { status: 200 })
         : null),
-      ...aliexpressFlow([{ queryImage: 'q', status: 'no_matches', error: 'no matches after 3 uploads' }]),
     ]);
     const response = await request(app())
       .post('/api/sbase/image')
@@ -957,7 +913,6 @@ describe('S Base — المسارات', () => {
     const data = response.body.data;
     expect(data).toMatchObject({ status: 'empty', count: 0, items: [], stores: [] });
     expect(data.groups[0]).toMatchObject({ status: 'empty', count: 0, costUsd: 0 });
-    expect(data.groups[1]).toMatchObject({ status: 'empty', count: 0, costUsd: 0 });
     expect(data.costUsd).toBe(0);
   });
 

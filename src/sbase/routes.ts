@@ -32,7 +32,7 @@ import {
 } from './descriptors';
 import { SbaseError } from './errors';
 
-/** عقد توفر المتغيّرات — نوع محلي بنيوي مطابق لكاتب zayrovix المحقون من
+/** عقد توفر المتغيّرات — نوع محلي بنيوي مطابق لكاتب العقد المحقون من
  * نقطة التركيب (server.ts هو مفتاح الحدود المشروع للمراجع، لا sbase). */
 type SbaseAvailability = 'available' | 'unavailable' | 'unknown';
 export interface SbaseVariantContractInput {
@@ -214,7 +214,7 @@ export interface SbaseRouterOptions {
   getPricingRules?: () => PricingRules;
   /**
    * كاتب عقد توفر المتغيّرات — يُحقن من نقطة التركيب (server.ts، مفتاح الحدود)
-   * لأن العزل المعماري لـS Base يمنع استيراد zayrovix من ملفات القالب.
+   * لأن العزل المعماري لـS Base يمنع استيراد محرّك العقد من ملفات القالب.
    * بلا محقون: التفاصيل تعمل بلا عقد والحارس يظل صادقاً كما هو.
    */
   recordVariantContract?: (productKey: string, contract: SbaseVariantContractInput, checkedAt?: string) => void;
@@ -450,7 +450,7 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
 
       /*
        * التعمير التدريجي (قرار المالك): الشاشة تبعت نداء **لكل متجر** على حدة —
-       * `?stores=1688,aliexpress` يحدّد من يُستجوب في هذا النداء. حصر صارم:
+       * `?stores=1688` يحدّد من يُستجوب في هذا النداء. حصر صارم:
        * اسم غريب ⇒ رفض 400 صريح، لا فشل صامت ولا استجواب غير المطلوب.
        */
       const requestedStores = typeof req.query.stores === 'string'
