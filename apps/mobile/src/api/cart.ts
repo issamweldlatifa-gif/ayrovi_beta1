@@ -297,9 +297,9 @@ export interface SbaseCartPayload {
   imageUrl: string;
   sourcePrice: number;
   sourceCurrency: string;
-  variant: null;
-  requestedSize: null;
-  requestedColor: null;
+  variant: string | null;
+  requestedSize: string | null;
+  requestedColor: string | null;
   customerNote: string;
   quantity: number;
 }

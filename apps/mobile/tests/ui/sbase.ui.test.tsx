@@ -366,6 +366,29 @@ describe('S Base — fiche produit', () => {
     view.unmount();
   });
 
+  it('اختيار اللون والكمية في الفيش يصلان للحمولة كما اختارهما الزبون', async () => {
+    itemMock.mockResolvedValue(DETAIL);
+    cartMock.mockResolvedValue({ cartItemId: 'c9', totalItemsCount: 1, totalTND: 29.504, deliveryTND: 7, quoteExpiresAt: '', serverNow: '' });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = render(
+      <PrefsProvider><I18nProvider><ThemeProvider><QueryClientProvider client={client}>
+        <SbaseItemScreen source="1688" id="1046925823679" title="Écouteurs" url={null} />
+      </QueryClientProvider></ThemeProvider></I18nProvider></PrefsProvider>,
+    );
+    await screen.findByText('Écouteurs sans fil');
+    // Couleur: Noir (أول مجموعة، أول قيمة)
+    fireEvent.press(screen.getByTestId('sbase-variant-0-0'));
+    fireEvent.press(screen.getByTestId('sbase-fiche-qty-plus'));
+    fireEvent.press(screen.getByTestId('sbase-fiche-cart'));
+    await waitFor(() => expect(cartMock).toHaveBeenCalledTimes(1));
+    const call = cartMock.mock.calls[0][0] as { payload: { requestedColor: string | null; quantity: number; variant: string | null } };
+    expect(call.payload.requestedColor).toBe('Noir');
+    expect(call.payload.quantity).toBe(2);
+    expect(call.payload.variant).toContain('Noir');
+    expect(await screen.findByText(/Ajouté au panier/)).toBeTruthy();
+    view.unmount();
+  });
+
   it('boutique sans fiche : l’écran le dit au lieu d’afficher du vide', async () => {
     itemMock.mockRejectedValue(Object.assign(new Error('unsupported'), { code: 'DETAILS_UNSUPPORTED' }));
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -525,6 +548,20 @@ describe('S Base — photo (1688, sans SerpApi)', () => {
     expect(call.payload.priceVerificationStatus).toBeUndefined();
     expect(call.payload.priceToken).toBeUndefined();
     expect(await screen.findByText(/Ajouté au panier/)).toBeTruthy();
+    view.unmount();
+  });
+
+  it('عدّاد الكمية على البطاقة يرفع الحمولة (سقف 99 وأدنى حدّ MOQ)', async () => {
+    searchMock.mockResolvedValue(RESULT);
+    cartMock.mockResolvedValue({ cartItemId: 'c2', totalItemsCount: 1, totalTND: 22.504, deliveryTND: 8, quoteExpiresAt: '', serverNow: '' });
+    const view = mount();
+    fireEvent.changeText(await screen.findByTestId('sbase-query'), 'traceur');
+    fireEvent.press(screen.getByTestId('sbase-submit'));
+    fireEvent.press(await screen.findByTestId('sbase-qty-plus-0'));
+    fireEvent.press(screen.getByTestId('sbase-qty-plus-0'));
+    fireEvent.press(screen.getByTestId('sbase-cart-0'));
+    await waitFor(() => expect(cartMock).toHaveBeenCalledTimes(1));
+    expect((cartMock.mock.calls[0][0] as { payload: { quantity: number } }).payload.quantity).toBe(3);
     view.unmount();
   });
 

@@ -15,6 +15,7 @@ import {
   failureMessageKey,
   formatItemPrice,
   formatItemPriceWithCurrency,
+  parseMoq,
   formatTND,
   isImageProviderFailure,
   missingLabelKey,
@@ -121,7 +122,7 @@ describe('بطاقة S Base — السلّة والمشابهة والعملة',
   });
 
   test('buildSbaseCartPayload: حمولة صادقة بلا quote، وnull عند غياب الأساس', () => {
-    const full = { url: 'https://detail.1688.com/1.html', id: 'x1', title: 'Trouser', image: null, amount: 35, currency: 'CNY', store: '1688' };
+    const full = { url: 'https://detail.1688.com/1.html', id: 'x1', title: 'Trouser', image: null, amount: 35, currency: 'CNY', store: '1688', moq: null };
     const payload = buildSbaseCartPayload(full);
     expect(payload).toMatchObject({
       store: '1688', externalId: 'x1', sourcePrice: 35, sourceCurrency: 'CNY',
@@ -134,5 +135,28 @@ describe('بطاقة S Base — السلّة والمشابهة والعملة',
     expect(buildSbaseCartPayload({ ...full, amount: 0 })).toBeNull();
     expect(buildSbaseCartPayload({ ...full, currency: null })).toBeNull();
     expect(buildSbaseCartPayload({ ...full, title: '  ' })).toBeNull();
+  });
+
+  test('parseMoq يستخرج أدنى كمية المورّد من نصه — وبلا رقم ⇒ 1', () => {
+    expect(parseMoq('起订量: 10')).toBe(10);
+    expect(parseMoq('2件起批')).toBe(2);
+    expect(parseMoq('min. 5 pieces')).toBe(5);
+    expect(parseMoq(null)).toBe(1);
+    expect(parseMoq('خالص بلا رقم')).toBe(1);
+  });
+
+  test('buildSbaseCartPayload بالاختيار: لون/مقاس/كمية + فرض MOQ + سقف 99', () => {
+    const full = { url: 'https://detail.1688.com/1.html', id: 'x1', title: 'Trouser', image: null, amount: 35, currency: 'CNY', store: '1688', moq: null };
+    const payload = buildSbaseCartPayload(full, { color: 'Noir', size: 'XL', quantity: 3, customerNote: 'هدية' });
+    expect(payload).toMatchObject({ requestedColor: 'Noir', requestedSize: 'XL', quantity: 3, customerNote: 'هدية' });
+    expect(payload?.variant).toContain('Noir');
+    // MOQ المعلَن يفرض نفسه على الكمية الأصغر
+    expect(buildSbaseCartPayload({ ...full, moq: '2' }, { quantity: 1 })?.quantity).toBe(2);
+    expect(buildSbaseCartPayload({ ...full, moq: '起订量: 10' }, {})?.quantity).toBe(10);
+    // السقف والأرضية
+    expect(buildSbaseCartPayload(full, { quantity: 150 })?.quantity).toBe(99);
+    expect(buildSbaseCartPayload(full, { quantity: 0 })?.quantity).toBe(1);
+    // بلا لون ولا مقاس ⇒ variant تصفّر إلى null (لا نص فارغ كاذب)
+    expect(buildSbaseCartPayload(full, {})?.variant).toBeNull();
   });
 });

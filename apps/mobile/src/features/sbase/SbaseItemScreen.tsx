@@ -17,7 +17,9 @@ import { useQuery } from '@tanstack/react-query';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import type { SbaseDetailPayload } from '@/api/sbase';
+import { addSbaseToCart } from '@/api/cart';
 import { fetchSbaseItem, searchSbase } from '@/api/sbase';
+import { useSessionId } from '@/session/session';
 import { AppImage } from '@/design/appImage';
 import { AppScreen } from '@/design/layout';
 import { goBack } from '@/design/navigation';
@@ -27,7 +29,7 @@ import { AppText, Button } from '@/design/ui';
 import { useT, type TranslationKey } from '@/i18n';
 import { SkeletonFiche } from './Skeleton';
 import { ResultRow, openResult } from './SbaseScreens';
-import { deriveSimilarQuery, formatCallCost, formatDuration, formatItemPrice, formatTND, missingLabelKey } from './sbaseLogic';
+import { buildSbaseCartPayload, deriveSimilarQuery, formatCallCost, formatDuration, formatItemPrice, formatTND, missingLabelKey, parseMoq } from './sbaseLogic';
 
 function priceLabel(payload: SbaseDetailPayload, fallback: string): string {
   return formatItemPrice(
@@ -73,6 +75,52 @@ export function SbaseItemScreen({
   const payload = query.data ?? null;
   const detail = payload?.detail ?? null;
   const unsupported = (query.error as { code?: string } | null)?.code === 'DETAILS_UNSUPPORTED';
+
+  // سلة Zayrovi من الفيش: اختيار فعلي للون/المقاس + كمية تفرض MOQ المعلَن.
+  const sessionId = useSessionId();
+  const [variantSel, setVariantSel] = useState<Record<string, string>>({});
+  const [ficheQty, setFicheQty] = useState(1);
+  const [cartState, setCartState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
+  const [cartCode, setCartCode] = useState('');
+  const detailMoq = (detail as { moq?: string | null } | null)?.moq ?? null;
+  const selection = useMemo(() => {
+    let color: string | null = null;
+    let size: string | null = null;
+    const rest: string[] = [];
+    for (const [name, value] of Object.entries(variantSel)) {
+      if (/color|couleur|لون|颜色/i.test(name)) color = value;
+      else if (/size|taille|مقاس|尺码/i.test(name)) size = value;
+      else rest.push(`${name}: ${value}`);
+    }
+    return { color, size, variant: rest.join(' · ') || null, quantity: ficheQty };
+  }, [variantSel, ficheQty]);
+  // حراسة النوع أولاً: ثمن موجب وعملة معلنة وإلا لا حمولة أصلاً (الصدق نفسه).
+  const cartPayload = useMemo(() => (detail && detail.url && detail.currency
+    && detail.title && typeof detail.amount === 'number' && detail.amount > 0
+    ? buildSbaseCartPayload({
+      url: detail.url,
+      id: null,
+      title: detail.title,
+      image: detail.images[0] ?? null,
+      amount: detail.amount,
+      currency: detail.currency,
+      store: source,
+      moq: detailMoq,
+    }, selection)
+    : null), [detail, source, selection, detailMoq]);
+  const addFromFiche = () => {
+    if (!cartPayload || !sessionId || cartState === 'busy') return;
+    setCartState('busy');
+    setCartCode('');
+    addSbaseToCart({ payload: cartPayload, sessionId })
+      .then(() => setCartState('done'))
+      .catch((error: unknown) => {
+        setCartCode(typeof error === 'object' && error !== null && 'code' in error
+          ? String((error as { code?: unknown }).code ?? 'ERROR')
+          : 'ERROR');
+        setCartState('error');
+      });
+  };
 
   return <AppScreen testID="sbase-item" chrome={false} hasBottomBar>
     <View style={styles.topBar}>
@@ -170,16 +218,21 @@ export function SbaseItemScreen({
           : detail.variants.map((group) => <View key={group.name} style={styles.group}>
             <AppText variant="caption" color={theme.colors.muted}>{group.name}</AppText>
             <View style={styles.chips}>
-              {group.values.map((value) => <View
+              {group.values.map((value, valueIndex) => <Pressable
                 key={`${group.name}-${value.label}`}
-                accessibilityRole="text"
+                testID={`sbase-variant-${detail.variants.indexOf(group)}-${valueIndex}`}
+                accessibilityRole="button"
                 accessibilityLabel={`${group.name} ${value.label}`}
+                disabled={value.available === false}
+                onPress={() => setVariantSel((current) => ({ ...current, [group.name]: value.label }))}
                 style={[styles.chip, {
-                  borderColor: value.available === false ? theme.colors.line : theme.colors.lineControl,
+                  borderColor: variantSel[group.name] === value.label
+                    ? theme.colors.ink
+                    : value.available === false ? theme.colors.line : theme.colors.lineControl,
                   opacity: value.available === false ? theme.opacity.subtle : 1,
                 }]}>
                 <AppText variant="caption">{value.label}</AppText>
-              </View>)}
+              </Pressable>)}
             </View>
           </View>)}
       </View>
@@ -222,6 +275,50 @@ export function SbaseItemScreen({
         block
         onPress={() => { void Linking.openURL(detail.url as string); }}
       /> : null}
+
+      {/* سلة Zayrovi من الفيش: نفس الصدق — بلا رابط/ثمن/عملة لا زرّ أصلاً */}
+      <View style={styles.section}>
+        <AppText variant="subtitle" accessibilityRole="header">{t('sbase.cart.qty')}</AppText>
+        <View style={styles.qtyRow} testID="sbase-fiche-qty">
+          <Pressable
+            testID="sbase-fiche-qty-minus"
+            accessibilityRole="button"
+            accessibilityLabel={t('sbase.cart.qtyMinus')}
+            onPress={() => setFicheQty((current) => Math.max(parseMoq(detailMoq), current - 1))}
+            style={styles.qtyBtn}>
+            <AppText variant="bodyStrong">−</AppText>
+          </Pressable>
+          <AppText testID="sbase-fiche-qty-value" variant="bodyStrong">{ficheQty}</AppText>
+          <Pressable
+            testID="sbase-fiche-qty-plus"
+            accessibilityRole="button"
+            accessibilityLabel={t('sbase.cart.qtyPlus')}
+            onPress={() => setFicheQty((current) => Math.min(99, current + 1))}
+            style={styles.qtyBtn}>
+            <AppText variant="bodyStrong">+</AppText>
+          </Pressable>
+          {parseMoq(detailMoq) > 1 ? <AppText variant="caption" color={theme.colors.muted}>{t('sbase.moq')} {parseMoq(detailMoq)}</AppText> : null}
+        </View>
+        {cartPayload ? <Pressable
+          testID="sbase-fiche-cart"
+          accessibilityRole="button"
+          accessibilityLabel={t('sbase.cart.add')}
+          onPress={addFromFiche}
+          disabled={cartState === 'busy' || !sessionId}
+          style={[styles.cartButton, { borderColor: theme.colors.line, opacity: cartState === 'busy' || !sessionId ? theme.opacity.subtle : 1 }]}>
+          <Ionicons
+            name={cartState === 'done' ? 'checkmark' : 'cart-outline'}
+            size={theme.iconSize.sm}
+            color={theme.colors.ink}
+          />
+          <AppText variant="captionStrong" color={theme.colors.ink}>
+            {cartState === 'done' ? t('sbase.cart.added') : cartState === 'error' ? t('sbase.cart.failed') : t('sbase.cart.add')}
+          </AppText>
+        </Pressable> : null}
+        <AppText testID="sbase-fiche-cart-state" variant="caption" color={cartState === 'error' ? theme.status.danger.fg : theme.colors.muted}>
+          {cartState === 'error' ? cartCode : ''}
+        </AppText>
+      </View>
 
       <View testID="sbase-similar" style={styles.section}>
         <AppText variant="subtitle" accessibilityRole="header">{t('sbase.similar.title')}</AppText>
@@ -273,6 +370,9 @@ const styles = StyleSheet.create({
   group: { gap: 4 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: { borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.xl, paddingHorizontal: 10, paddingVertical: 4 },
+  qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  qtyBtn: { borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 4, alignItems: 'center', justifyContent: 'center' },
+  cartButton: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 8 },
   specRow: { flexDirection: 'row', gap: 10, paddingVertical: 6, borderTopWidth: StyleSheet.hairlineWidth },
   card: { gap: 8, padding: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.md, marginTop: 12 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

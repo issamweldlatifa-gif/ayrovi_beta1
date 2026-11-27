@@ -45,6 +45,7 @@ import {
   formatCallCost,
   formatDuration,
   formatItemPriceWithCurrency,
+  parseMoq,
   formatTND,
   failureMessageKey,
   missingLabelKey,
@@ -99,9 +100,10 @@ export function ResultRow({ item, index, onOpen }: { item: SbaseItem; index: num
   const sessionId = useSessionId();
   const [cartState, setCartState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
   const [cartCode, setCartCode] = useState('');
+  const [qty, setQty] = useState(() => parseMoq(item.moq));
   const estimate = item.priceEstimate ?? null;
   const totalTND = formatTND(estimate?.totalTND ?? null);
-  const cartPayload = useMemo(() => buildSbaseCartPayload(item), [item]);
+  const cartPayload = useMemo(() => buildSbaseCartPayload(item, { quantity: qty }), [item, qty]);
   const addToCart = () => {
     if (!cartPayload || !sessionId || cartState === 'busy') return;
     setCartState('busy'); setCartCode('');
@@ -150,6 +152,27 @@ export function ResultRow({ item, index, onOpen }: { item: SbaseItem; index: num
         })}
       </AppText> : null}
 
+      {/* عدّاد الكمية: أدنى حدّه MOQ المعلَن (تحقق الكمية الصادق — لا مخزون حيّ مُختلق) */}
+      <View style={styles.qtyRow} testID={`sbase-qty-${index}`}>
+        <Pressable
+          testID={`sbase-qty-minus-${index}`}
+          accessibilityRole="button"
+          accessibilityLabel={t('sbase.cart.qtyMinus')}
+          onPress={() => setQty((current) => Math.max(parseMoq(item.moq), current - 1))}
+          style={styles.qtyBtn}>
+          <AppText variant="bodyStrong">−</AppText>
+        </Pressable>
+        <AppText testID={`sbase-qty-value-${index}`} variant="bodyStrong">{qty}</AppText>
+        <Pressable
+          testID={`sbase-qty-plus-${index}`}
+          accessibilityRole="button"
+          accessibilityLabel={t('sbase.cart.qtyPlus')}
+          onPress={() => setQty((current) => Math.min(99, current + 1))}
+          style={styles.qtyBtn}>
+          <AppText variant="bodyStrong">+</AppText>
+        </Pressable>
+        {parseMoq(item.moq) > 1 ? <AppText variant="caption" color={theme.colors.muted}>{t('sbase.moq')} {parseMoq(item.moq)}</AppText> : null}
+      </View>
       <View style={styles.itemActions}>
         {/* سلة Zayrovi: بلا quote موقّعة ⇒ الخادم يضعها مراجعة يدوية (PENDING_MANUAL).
            بلا رابط/ثمن/عملة لا زرّ أصلاً — لا نعرض زراً نعرف أن الخادم سيرفضه. */}
@@ -699,6 +722,11 @@ const styles = StyleSheet.create({
   itemImage: { width: '100%', height: 150 },
   itemBody: { gap: 4, padding: 10 },
   itemActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 },
+  qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 2 },
+  qtyBtn: {
+    borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 10, paddingVertical: 2,
+    alignItems: 'center', justifyContent: 'center',
+  },
   cartButton: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 10, paddingVertical: 6,

@@ -157,10 +157,38 @@ export function deriveSimilarQuery(title: string): string {
  * هذا هو الطريق الصادق الوحيد — عمرنا ما نرسل «موثّق» على بحث.
  * null = ما يُرسَلش أصلاً: بلا رابط، بلا ثمن موجب، بلا عملة ⇒ الخادم يرفض 400.
  */
-export function buildSbaseCartPayload(item: Pick<SbaseItem, 'url' | 'id' | 'title' | 'image' | 'amount' | 'currency' | 'store'>): SbaseCartPayload | null {
+/** أدنى كمية المورّد (MOQ): أول رقم في النص («起订量: 10» ⇒ 10) — بلا رقم ⇒ 1،
+ * مقيّد ب99 حداً أعلى. هذه هي «التحقق من الكمية» الصادقة المتاحة من البطاقة:
+ * ما نعرف حدّ المورّد المعلَن، ولا نختلق مخزوناً حياً. */
+export function parseMoq(moq: string | null | undefined): number {
+  const match = typeof moq === 'string' ? moq.match(/\d+/) : null;
+  const parsed = match ? Number.parseInt(match[0], 10) : Number.NaN;
+  return Number.isFinite(parsed) && parsed >= 1 ? Math.min(parsed, 99) : 1;
+}
+
+/** اختيار الزبون على السطر: لون/مقاس/تسمية متغيّر/كمية/ملاحظة — كلها اختيارية. */
+export interface SbaseCartSelection {
+  color?: string | null;
+  size?: string | null;
+  variant?: string | null;
+  quantity?: number;
+  customerNote?: string;
+}
+
+export function buildSbaseCartPayload(
+  item: Pick<SbaseItem, 'url' | 'id' | 'title' | 'image' | 'amount' | 'currency' | 'store' | 'moq'>,
+  selection: SbaseCartSelection = {},
+): SbaseCartPayload | null {
   if (!item.url || !item.title?.trim()) return null;
   if (typeof item.amount !== 'number' || !Number.isFinite(item.amount) || item.amount <= 0) return null;
   if (!item.currency) return null;
+  const rawQty = Number.isFinite(selection.quantity) ? Math.floor(selection.quantity as number) : 1;
+  const minQty = parseMoq(item.moq);
+  // أدنى الكمية فرضٌ لا اقتراح: المورّد ما يقبلش أقل من MOQ المعلَن.
+  const quantity = Math.min(99, Math.max(1, rawQty, minQty));
+  const color = selection.color?.trim().slice(0, 100) || null;
+  const size = selection.size?.trim().slice(0, 100) || null;
+  const variant = (selection.variant?.trim() || [color, size].filter(Boolean).join(' / ')).slice(0, 200) || null;
   return {
     store: item.store && /^[a-z0-9][a-z0-9._-]{0,63}$/i.test(item.store.trim()) ? item.store.trim() : 'generic',
     externalId: item.id ?? null,
@@ -170,10 +198,10 @@ export function buildSbaseCartPayload(item: Pick<SbaseItem, 'url' | 'id' | 'titl
     imageUrl: item.image ?? '',
     sourcePrice: item.amount,
     sourceCurrency: item.currency,
-    variant: null,
-    requestedSize: null,
-    requestedColor: null,
-    customerNote: '',
-    quantity: 1,
+    variant,
+    requestedSize: size,
+    requestedColor: color,
+    customerNote: (selection.customerNote ?? '').slice(0, 1000),
+    quantity,
   };
 }
