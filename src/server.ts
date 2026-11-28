@@ -38,6 +38,7 @@ import { createOcerexRouter } from './ocerex/routes';
 import { createAyWebsRouter } from './aywebs/routes';
 import { createSbaseRouter } from './sbase/routes';
 import { createSbaseBudgetGuard, readSbaseBudgetCapUsd } from './sbase/budget';
+import { createZSourcingRouter } from './zsourcing/routes';
 import { ensureAyWebsSchema } from './aywebs/schema';
 import { ERP_MODULES } from './erp-core/modules';
 import { bootstrapErpCore } from './erp-core/bootstrap';
@@ -273,9 +274,13 @@ const costlyZayrovixPaths = new Set(['/analyze-image', '/analyze-url', '/analyze
 const sbaseSearchRateLimit = rateLimit('sbase-search', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, authenticatedRateLimitKey);
 const sbaseSourcesRateLimit = rateLimit('sbase-sources', process.env.NODE_ENV === 'test' ? 1_000 : 240, 10 * 60_000, authenticatedRateLimitKey);
 const sbaseImageRateLimit = rateLimit('sbase-image', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000, authenticatedRateLimitKey);
+const zsourcingRateLimit = rateLimit('zsourcing', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, authenticatedRateLimitKey);
 app.use('/api/sbase/search', sbaseSearchRateLimit);
 app.use('/api/sbase/image', sbaseImageRateLimit);
 app.use('/api/sbase/sources', sbaseSourcesRateLimit);
+/* Z Sourcing (أمر المالك 28/11): مسار مستقل للمزوّد الجديد Nexscope —
+   بلا مفتاح على الخادم يرفض 503 صادقاً، ولا يلمس sbase/AYWEBS/Z Lens. */
+app.use('/api/zsourcing', zsourcingRateLimit);
 // Z Lens mobile : la détection seule (cadre de sélection + Live) a son PROPRE
 // compteur. Live interroge la caméra quand le téléphone se stabilise : sur le
 // compteur général (12 / 10 min, partagé avec les recherches), quelques visées
@@ -618,6 +623,8 @@ app.use('/api/sbase', createSbaseRouter({
     : {}),
 }));
 app.use('/api', createApiRouter(db, scraper, visionExtractor));
+
+app.use('/api/zsourcing', createZSourcingRouter());
 
 /*
  * Diagnostic passerelle carte — LECTURE SEULE, SANS SECRET.

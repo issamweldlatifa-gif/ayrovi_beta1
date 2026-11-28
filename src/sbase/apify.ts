@@ -142,6 +142,18 @@ export function apifyImageActor(): string {
  * نقطة نهاية Server actor للصورة: `user~actor` ⇒ `https://user--actor.apify.actor/search`
  * (الشكل الموثّق على صفحة الـactor).
  */
+/**
+ * عَلَم مسار Apify القديم (أمر المالك 28/11 — المرحلة 2 من أمر Z Sourcing):
+ * `SBASE_APIFY_DISABLED` truthy ⇒ كل نداءات Apify في sbase تُرفض **قبل أي
+ * استهلاك** بكود صادق، والكود والإعدادات تبقى سليمة للرجوع والمقارنة
+ * («ممنوع حذف Apify نهائياً في هذه المرحلة»). الافتراضي: المسار القديم نشط —
+ * لا شيء يتغير حتى يقرر المالك قلب العلم عند إطلاق Z Sourcing/Nexscope.
+ */
+export function isApifyLegacyDisabled(): boolean {
+  const raw = (process.env.SBASE_APIFY_DISABLED ?? '').trim().toLowerCase();
+  return raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on';
+}
+
 export function apifyImageEndpoint(): string {
   return `https://${apifyImageActor().replace('~', '--')}.apify.actor/search`;
 }

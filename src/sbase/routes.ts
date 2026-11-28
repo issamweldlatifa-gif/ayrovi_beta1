@@ -46,6 +46,7 @@ import {
   apifyImageBase64,
   apifyImageEndpoint,
   APIFY_IMAGE_MAX_RESULTS,
+  isApifyLegacyDisabled,
   runApifyDetail,
   runApifySearch,
   searchApifyAliexpressByImage,
@@ -287,6 +288,8 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
         configured: apifyConfigured(),
         image: apifyConfigured(),
         sources: describeSbaseSources({ configured: apifyConfigured() }).length,
+        /** المرحلة 2 من أمر Z Sourcing: حالة عَلَم المسار القديم — الشفافية للفريق. */
+        legacyApifyDisabled: isApifyLegacyDisabled(),
       },
     });
   });
@@ -347,6 +350,14 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
         error: 'S Base غير مفعّل: مفتاح Apify ما زال غير مضبوط على الخادم.',
       });
     }
+    // المرحلة 2 من أمر Z Sourcing (المالك 28/11): العَلَم يقفل المسار القديم بأمان قبل أي استهلاك.
+    if (isApifyLegacyDisabled()) {
+      return res.status(503).json({
+        success: false,
+        code: 'SBASE_APIFY_DISABLED',
+        error: 'مسار Apify القديم معطّل بأمر المالك — Z Sourcing (Nexscope) هو المسار النشط. أزل SBASE_APIFY_DISABLED للرجوع.',
+      });
+    }
 
     const started = Date.now();
     const groups = (await Promise.all(wanted.map((source) => searchOneSource(source, query, options.checkBudget))))
@@ -376,6 +387,14 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
    */
   router.post('/item', async (req, res) => {
     const body = (req.body ?? {}) as Record<string, unknown>;
+    // المرحلة 2 من أمر Z Sourcing: العَلَم يقفل المسار القديم قبل أي قراءة/استهلاك.
+    if (isApifyLegacyDisabled()) {
+      return res.status(503).json({
+        success: false,
+        code: 'SBASE_APIFY_DISABLED',
+        error: 'مسار Apify القديم معطّل بأمر المالك — Z Sourcing (Nexscope) هو المسار النشط. أزل SBASE_APIFY_DISABLED للرجوع.',
+      });
+    }
     const sourceId = typeof body.source === 'string' ? body.source.trim() : '';
     const source = findSbaseSource(sourceId);
     if (!source) {
@@ -448,6 +467,14 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
     const file = req.file;
     if (!file?.buffer?.length) {
       return res.status(400).json({ success: false, code: 'SBASE_IMAGE_EMPTY', error: 'صورة مطلوبة.' });
+    }
+    // المرحلة 2 من أمر Z Sourcing: العَلَم قبل أي تحويل/استهلاك — الفحص المحلي المجاني أولاً.
+    if (isApifyLegacyDisabled()) {
+      return res.status(503).json({
+        success: false,
+        code: 'SBASE_APIFY_DISABLED',
+        error: 'مسار Apify القديم معطّل بأمر المالك — Z Sourcing (Nexscope) هو المسار النشط. أزل SBASE_APIFY_DISABLED للرجوع.',
+      });
     }
     try {
       const normalized = await normalizeUploadedImage(file.buffer, file.mimetype);

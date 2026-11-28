@@ -41,6 +41,10 @@ export default defineConfig({
       APIFY_SEARCH_MAX_ITEMS: '',
       // S Base — حارس الميزانية (P1-A(a)): hermétique — السقف لا يتسرّب من .env محلي.
       SBASE_DAILY_BUDGET_USD: '',
+      // Z Sourcing (28/11): مفتاح Nexscope وعَلَم المسار القديم — بيئة اختبار معزولة.
+      NEXSCOPE_API_KEY: '',
+      SBASE_APIFY_DISABLED: '',
+      ZSOURCING_NEXSCOPE_TIMEOUT_MS: '',
       GROQ_API_KEY: '',
       GEMINI_API_KEY: '',
       GOOGLE_API_KEY: '',
