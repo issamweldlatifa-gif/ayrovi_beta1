@@ -35,10 +35,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install (root only — probe needs no native build)
-        run: npm ci --ignore-scripts
-      - name: Run live probe (vitest filter)
+      - name: Install (full — runners build native deps; esbuild needs its scripts)
+        run: npm ci
+      - name: Run live probe (vitest filter) — evidence emitted as annotations
         env:
           ZS_LIVE_PROBE: "1"
           ZS_LIVE_BASE_URL: ${{ inputs.base || 'https://ayrovi-beta1-moo8.onrender.com' }}
-        run: npx vitest run tests/zsourcing-live-probe.test.ts --reporter=basic
+        run: |
+          set -o pipefail
+          npx vitest run tests/zsourcing-live-probe.test.ts --reporter=basic 2>&1 | tee /tmp/probe.log
+          code=$?
+          # الشواهد تصعد annotations — تُقرأ من gh run view بلا وصول للّوجز الخام
+          grep '\[zsourcing-live\]' /tmp/probe.log | sed 's/::/──/g' | while IFS= read -r line; do
+            echo "::notice title=ZS-live::${line#*[zsourcing-live] }"
+          done
+          exit $code
