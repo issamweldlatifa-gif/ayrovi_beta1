@@ -17,6 +17,7 @@
 | D18 | Recommended S BASE Architecture | `D18-recommended-sbase-architecture.md` | التوصية النهائية: تبنّي/رفض من Soorce + خريطة الدمج + Roadmap مرتب + Checklist مراجعة المالك (10 بنود) |
 | D19 | **ZAYROVI Architecture Audit · v1.1 منقّحة** | `D19-zayrovi-architecture-audit.md` | تدقيق قراءة-فقط (منقّح بعد مراجعة المالك): **4 مسارات اكتساب + سجل مركزي منفصل**، 3 عقود متوازية، quote-token مكرر بملكية خارج ZPIC، كاش بسياسات متمايزة — إجابات أسئلة المالك الستة بمراجع أسطر |
 | D20 | **ZPIC Final Design & Execution Plan · v1.1 منقّح** | `D20-zpic-final-design-execution-plan.md` | التصميم المنقّح بعد مراجعة المالك: مبدأ «تنظّم لا تستحوذ»، اتجاهات تبعية بلا دورات، ProductIntel بإثبات المصدر والحداثة، ملكية Quote-Token لـCommerce Core، سياسات Raw/كاش/ترجمة صريحة غير معلقة على AI Core، وجدول ملكية جامع |
+| GLO | **المعجم المؤسسي — التعريف الرسمي للأنظمة** | `GLOSSARY-systems-definition.md` | التعريف المؤسسي المنقول عن المالك حرفياً (Z Lens/AYWEBS/S BASE/Commerce Social/Commerce Core + المبادئ الخمسة + المبدأ المركزي) + قراءة حالة كل بند من الكود (مثبت/مجدول/رؤية) — **مرجع ملزم يُقرأ أولاً** |
 
 ## حزمة شواهد SOORCE المحفوظة (المصدر المرجعي للجميع)
 
