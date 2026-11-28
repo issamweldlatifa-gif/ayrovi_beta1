@@ -177,10 +177,10 @@
 | المرحلة | المحتوى | بوّة الخروج |
 |---|---|---|
 | **P0 — تم بجزئه** | D11–D18 + D19 v1.1 + D20 v1.1 | **المراجعة النهائية للمالك ثم الموافقة** (هذا الطلب) |
-| **P1-A منقسمة (جديد)** | (أ) **Budget Guard — ضمن ZPIC**: سقف يومي لكل connector + env-gate موحّد. (ب) **Quote-Token الموحّدة — ملكية Commerce Core، خارج ZPIC**: خدمة مشتركة واحدة + ترحيل نقاط الاستدعاء نقطة-نقطة | (أ) `SOURCE_BUDGET_EXCEEDED` مُختبر؛ (ب) اختبارات cartPriceTrust خضراء 100% بلا تغيير سلوك العميل |
+| **P1-A منقسمة (جديد)** | (أ) **Budget Guard — ضمن ZPIC**: سقف يومي لكل connector + env-gate موحّد + **سجل يومي محفوظ في جدول `settings` القائم بنمط check-and-reserve (D22 v1.1 — صفر migrations، يبقى عبر restart)**. (ب) **Quote-Token الموحّدة — ملكية Commerce Core، خارج ZPIC**: خدمة مشتركة واحدة + ترحيل نقاط الاستدعاء نقطة-نقطة | (أ) `SOURCE_BUDGET_EXCEEDED` مُختبر + بقاء السجل عبر restart؛ (ب) اختبارات cartPriceTrust خضراء 100% بلا تغيير سلوك العميل |
 | **P1-B** | ProductIntel v1 **بكامل حقول الإثبات (§2)** + تفعيل `discovery_sources` كسجل connectors + انتقال Apify-1688 ليكون connector يملكه ZPIC + S BASE أول مستهلك (Mapper لـSbaseItem) | E2E الثلاثي AYR-299819 أخضر + فحص اتجاه imports نظيف |
 | **P1-C** | Raw Store (بسياسة §5 — جدوله عند هذه البوّة فقط) + Cache بمصفوفة §6 + Translation عبر adapter مستقل (§7) + خط الصور فوق imageIsolation | استرجاع حرفي من Raw Store؛ hit-rate مقيس؛ ترجمة «斤»→كغ باختبار؛ **بلا أي مرجع لai-core** |
-| **P2** | Dedup عابر-المصادر + بنش المصدر الثاني (البروتوكول الخماسي) + كتالوج SEO + failover + بحث صورة موحّد | قرار بأرقام D17 |
+| **P2** | Dedup عابر-المصادر + بنش المصدر الثاني (البروتوكول الخماسي) + كتالوج SEO + failover + بحث صورة موحّد + **انتقال Budget Guard لنقطة تنسيق مشتركة إذا دخل التوسع الأفقي (شرط مسجّل — D22 v1.1)** | قرار بأرقام D17 |
 | **موازٍ دائم** | Commerce Core P1 (trio → T1 → Approval) + فجوة born-AWAITING_DEPOSIT في P2 له | لا يُؤخَّر لأجل ZPIC إطلاقاً |
 
 ## §10 · ما لا تملكه ZPIC (حجب صريح — المبدأ §0)
