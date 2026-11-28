@@ -55,12 +55,13 @@
 2. **بحث الصورة ✓ (يعمل):** الجولة 1: غلاف نجاح 200 (0 نتائج لصورة 1×1 غير معبرة — اختبار صورة معبرة عند مرحلة الواجهة)؛ الجولة 2: 429 حقيقية من Nexscope أعادها المسار **بأكوادنا الصادقة** `ZS_NEXSCOPE_RATE_LIMIT`.
 3. **التفاصيل ✓:** الجولة 1: رد حي 200 بمحتوى (الشاهد الثالث مكتمل)؛ الجولة 2: 429 صادقة.
 4. **اكتشاف تشغيلي جوهري:** حد الطلبات عند Nexscope **فعلي ومشغّل** (4 نداءات متتالية خفّضته) ⇒ (أ) تكملة واجب الأمر «إعادة محاولة بلا تكرار»: الـadapter يعيد **مرة واحدة** بعد نافذة Retry-After الموثّقة للطلبات المرفوضة عند البوّة فقط (لم تُنفَّذ فوق — لا كلفة ولا تكرار)؛ ما نُفِّذ فعلاً لا يُعاد أبداً (مثبت بالاختبارات). (ب) الكاش يصبح ضرورة تشغيلية للمرحلة 10 لا ترفاً.
-5. **مفاتيح الاستجابة الحية المرصودة (بحث):** `salesOrderCount, deliveryTime, quantityBegin, availableDate, levelName, title, shopUrl, asinUrl, estimatedSalesAmount, consignPrice, unit, sourceType, price, salesQuantity` — أُدرجت في `types.ts` (quantityBegin مرشّح MOQ البحث — تثبيت الدلالة عند أول سلة) — مفاتيح التفاصيل تُرصَد في جولة الجامع القادمة (حد GitHub 10 annotations قصّها في الجولة 1).
+5. **مفاتيح الاستجابة الحية المرصودة — بحث:** `salesOrderCount, deliveryTime, quantityBegin, availableDate, levelName, title, shopUrl, asinUrl, estimatedSalesAmount, consignPrice, unit, sourceType, price, salesQuantity` — أُدرجت في `types.ts` (quantityBegin مرشّح MOQ البحث).
+6. **مفاتيح التفاصيل الحية (الجولة 3 — run 46161147454، بعد فجوة 12 ث بين الأطوار أنهت 429):** `detail.product` = **skuList** (المتغيرات: ألوان/مقاسات/أسعار) · **saleInfo** · **shippingInfo** · **companyName** (المورّد) · **productImage** · **productAttributes** (المواصفات) · subject · subjectTrans (ترجمة من المزوّد!) · description · sellerOpenId · offerIdentities · tradeScore · createDate · invoiceInfo · topCategoryId/thirdCategoryId · isSelect · soldOut · tags · productCargoNumber · certificates · errcode — **تطابق مخطط الوثائق الرسمية** (data.product.offerId/subject/skuList/saleInfo/shippingInfo/companyName) — أساس مباشر لبناء صفحة التفاصيل (المرحلة 6) وقيود types.ts.
 6. **حالة عَلَم Apify على الخادم:** `legacyApifyDisabled=false` — العلم لم يُرفع بعد (الافتراضي)، والرفع قرار المالك عند تشغيل المسار الجديد.
 
 **تصحيح CI أثناء الجولة:** تثبيت Node في الجامع ضُبط `22.23.4` حرفياً مطابقةً لـ`scripts/check-node-security.cjs` (كان يكسر workflow الأمني + الطبقة العليا لvitest على runner) — workflow الأمني عاد أخضر.
 
-**أسئلة مفتوحة موثّقة بصدق (تُحسم في جولات الجامع/المراحل القادمة):** مفاتيح detail الحية · صورة معبرة لاختبار بحث الصورة · hasMore/إجمالي الصفحات · تحويل credits→عملة لملاءمة حارس الميزانية · سلوك كلمات غير صينية قبل ربط طبقة الترجمة.
+**أسئلة مفتوحة موثّقة بصدق (تُحسم في المراحل القادمة):** المسارات الداخلية لskuList (شرائح الأسعار/الألوان/المقاسات — تُرصد عند بناء المرحلة 6 بصورة منتج حية) · صورة معبرة لاختبار بحث الصورة · hasMore/إجمالي الصفحات · تحويل credits→عملة لملاءمة حارس الميزانية · سلوك كلمات غير صينية قبل ربط طبقة الترجمة (مع subjectTrans من المزوّد كمساعد).
 
 ## المراحل 4–11 — البناء فوق بيانات مُتحقّقة (المقبلة)
 
