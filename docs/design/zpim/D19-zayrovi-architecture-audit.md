@@ -1,6 +1,6 @@
 # D19 — ZAYROVI Architecture Audit (ما قبل ZPIC)
-**الحالة:** **v1.2 — منقّحة بعد مراجعة المالك (26/11) · بانتظار المراجعة النهائية — غير معتمدة للتنفيذ.**
-**v1.0:** تدقيق قراءة-فقط للشيفرة عند commit `c197eb6` — لم يُعدَّل أي ملف مصدر. **v1.1:** تصحيح تصنيف مسارات الاكتساب، فصل سجل المصادر عنها، وضبط ملاحظات الملكية (quote-token) والكاش — بلا تغيير في الشواهد. **v1.2:** إضافة س1-م (تقييم القدرة الاستخراجية لكل مسار — طلب المالك: «لنشوف فيو منظومة أقل من المطلوب») + حاشية قرار 12/10/2026 (Bright Data طريق قراءة وحيد + استثناء WebView).
+**الحالة:** **v1.3 — منقّحة بعد مراجعة المالك (26/11) · بانتظار المراجعة النهائية — غير معتمدة للتنفيذ.**
+**v1.0:** تدقيق قراءة-فقط للشيفرة عند commit `c197eb6` — لم يُعدَّل أي ملف مصدر. **v1.1:** تصحيح تصنيف مسارات الاكتساب، فصل سجل المصادر عنها، وضبط ملاحظات الملكية (quote-token) والكاش — بلا تغيير في الشواهد. **v1.2:** إضافة س1-م (تقييم القدرة الاستخراجية لكل مسار) + حاشية قرار 12/10/2026. **v1.3 (تصحيح جوهري بتنبيه المالك):** فصل **الجلب عن الاستخراج** — Bright Data مزوّد وصول (fetch) لا استخراج؛ الاستخراج في AYWEBS = سكريبتات adapters، وفي Z Lens = خمسة مداخل (صورة/كلمة/رابط/باركود/لايف) والنتيجة بطاقات قابلة للشراء عبر AYWEBS.
 **المنهج:** كل إجابة مقرونة بمرجع `ملف:سطر` قابل للتحقق. القيود المحترمة: لا تعديل aywebs الداخلي ولا `/api/zayrovix` — القراءة والاستشهاد فقط.
 
 **مقياس المنظومات المفحوصة (أسطر):** `src/sbase/` ≈ 2,318 · `src/zayrovix/services/` ≈ 6,314 · `src/aywebs/` + adapters ≈ 21,640.
@@ -15,6 +15,7 @@
 | v1.1 | الكاش: الفجوة (S BASE) تُعالج بسياسات **لكل نوع بيانات ولكل مصدر** لا بنفس السياسة | «بيانات السعر تختلف عن الصور والبحث» |
 | v1.2 | إضافة **س1-م**: مصفوفة القدرة الاستخراجية × المتطلبات — **S BASE هي «أقل من المطلوب» للجملة** (السلّم/البيع/الثقة/التوفر غير مُستخرجة)، وCRM هو الأنضج في الإثبات | «استخراج البيانات من أهم النقاط — لنشوف فيو منظومة أقل من المطلوب» |
 | v1.2 | حاشية مسار AYWEBS: قرار 12/10/2026 يجعل Bright Data **طريق القراءة الوحيد** (`scraper.ts:406-410`) باستثناء WebView — والبوّة الوحيدة هي المفتاح، **لا عدّاد كلفة** (فجوة P1-A) | نقاش المالك على نقطة Bright Data |
+| v1.3 | **تصحيح الخلط جلب/استخراج**: Bright Data **لا يستخرج شيئاً** — يجيب HTML خام فقط؛ **الاستخراج = سكريبتات adapters** (`parseProductPageHtml` بـpriceSource لكل متجر). وZ Lens = **5 مداخل** موثقة (صورة/كلمة/رابط/باركود `:773`/لايف `:601,:270` + MLKit على الجهاز) تُنتج بطاقات قابلة للشراء عبر AYWEBS (`productLinkAdmission.ts:4,212`) | «قلت أن مسار الاستخراج في AYWEBS هو Bright Data وهذا غالط — استخراج حريف يدخل المتجر وسكريبتات تلتقط السعر والاختيار» |
 
 ---
 
@@ -24,8 +25,8 @@
 
 | # | المسار | الموقع | المزود الخارجي | البوابة والشاهد |
 |---|---|---|---|---|
-| 1 | **AYWEBS (تجزئة عالمية)** | `src/aywebs/adapters/` (aliexpress, amazon, shein, temu, capture-only, catalogue + registry + base) | كشط عبر `src/scraper/brightData.ts` — **Bright Data Web Unlocker** (مزوّد مدفوع، `render:true` لـshein/temu فقط لأن الرندر أغلى) | بوابة env صامتة: `BRIGHTDATA_API_KEY+BRIGHTDATA_ZONE` — بلاها `null` بلا أي طلب أو كلفة (`brightData.ts:4-8,29-33`)؛ نداء فعلي من `aywebs/routes.ts` |
-| 2 | **Zayrovix / Z Lens (اكتشاف بالصورة)** | `src/zayrovix/services/visualSearch.ts` | **SerpApi Google Lens** (9 أسواق: fr/de/it/es/uk/us/ca/tr/ae) — الصورة تُصغّر بـsharp وتُرفع لـAPI المؤقت بـimage_id قابل للانتهاء، بلا نشر عام | سقوف صارمة ملتقطة: `CACHE_TTL_MS = 10min`، `MAX_CACHE_ENTRIES=100`، `MAX_IN_FLIGHT=12`، حد صورة 500KB (`visualSearch.ts:10-15`) |
+| 1 | **AYWEBS (تجزئة عالمية)** | **الاستخراج: سكريبتات adapters** (`src/aywebs/adapters/` aliexpress/amazon/shein/temu/capture-only/catalogue + registry + base + `parseProductPageHtml` بـ`priceSource` لكل متجر) تدخل صفحة المتجر وتلتقط العنوان/السعر/الاختيار/المتغيرات وتجهّزها للطلب | **الجلب الشبكي فقط:** Bright Data Web Unlocker (`src/scraper/brightData.ts` — مزوّد وصول مدفوع، `render:true` لshein/temu فقط) — منذ قرار 12/10/2026 هو طريق الجلب الوحيد + استثناء WebView المحلي | بوّة env صامتة للمزوّد (`BRIGHTDATA_API_KEY+ZONE`)؛ **مزوّد الجلب لا يشارك في الاستخراج إطلاقاً** (`brightData.ts:29-33`, `scraper.ts:415-427,461-463`) |
+| 2 | **Zayrovix / Z Lens (اكتشاف متعدد المداخل)** | `src/zayrovix/routes.ts` + `services/visualSearch.ts` + `productLinkAdmission.ts` + كشف MLKit على الجهاز (`apps/mobile/src/features/lens/onDeviceDetection.ts`) | **خمسة مداخل موثقة في الكود:** ① صورة (SerpApi Google Lens — 9 أسواق، `visualSearch.ts`) ② كلمة/استعلام ③ رابط منتج (`PRODUCT_LINK_ADMISSION` — يُحلَّل عبر `analyzeAyWebsUrl` من AYWEBS، `productLinkAdmission.ts:4,212`) ④ باركود (`POST /analyze-barcode`، `routes.ts:773-792`، فكّ محلي على الجهاز) ⑤ **لايف منتج** (mode Live `routes.ts:601-639` + أحداث `live-events` `:270-281` + object-detection على الجهاز) | النتيجة: بطاقات مرشحة **قابلة للشراء** — الروابط المقبولة تُقرأ وتُشترى عبر مسار AYWEBS (handshake باتجاه واحد zayrovix→aywebs/browser)؛ SerpApi يغطي المدخل البصري فقط؛ سقوف الكاش/الفي-الفلایت صارمة (`visualSearch.ts:10-15`) |
 | 3 | **S BASE (جملة صينية)** | `src/sbase/apify.ts` + `descriptors.ts` + `routes.ts` | **Apify** — actor `sourabhbgp~1688-scraper` (بحث/تفاصيل) + قناة بحث الصورة = Apify Server actor بـbase64 في POST واحد (`image.ts:1-11`) | توكن في Render env فقط + 11 كود خطأ صادق للصورة (`image.ts:9-11`) + Ali runners ككود ميت لإعادة الدخول بلا حذف |
 | 4 | **خط استخراج CRM** | جداول `crm_stores` · `crm_store_source_profiles` · `crm_extraction_jobs` · `crm_extracted_products` (`database.ts:1013-1150`) | مصادر عملاء عبر jobs مجدولة | بنية extraction-as-job كاملة قائمة (المعالجة والنتائج في DB) |
 
@@ -37,7 +38,7 @@
 
 **خلاصة س1 (منقّحة):** أربعة مسارات اكتساب ومعالجة تعمل بأربعة أنماط مزودين وبثلاثة أنماط بوابة (env-silent, env-token, job-scheduler) — **بلا طبقة موحّدة واحدة**؛ ويوجد سجل مركزي للمصادر منفصل عنها جميعاً وجاهز للتفعيل.
 
-> **حاشية المسار 1 (v1.2):** قرار 12/10/2026 الموثق في `scraper.ts:406-410`: **«aucun lien marchand n'est plus lu directement depuis le serveur»** — Bright Data Web Unlocker هو **طريق قراءة فتحات المنتجات الوحيد** (فشل نظيف `BRIGHTDATA_NOT_CONFIGURED` بلا مفاتيح)، والاستثناء الوحيد صفحة WebView مُرندة من جهاز العميل (`scraper.ts:415-427`). البوّة الوحيدة اليوم = المفتاحان في env؛ **لا يوجد عدّاد كلفة يومي** — وهي الفجوة التي يسدّها Budget Guard (P1-A في D20).
+> **حاشية المسار 1 (v1.2، مُوضَّحة v1.3):** قرار 12/10/2026 الموثق في `scraper.ts:406-410`: **«aucun lien marchand n'est plus lu directement depuis le serveur»** — Bright Data Web Unlocker هو طريق **الجلب الشبكي** الوحيد لفتحات المنتجات (فشل نظيف `BRIGHTDATA_NOT_CONFIGURED` بلا مفاتيح)، والاستثناء صفحة WebView مُرندة من جهاز العميل (`scraper.ts:415-427`). **الجلب ≠ الاستخراج:** Bright Data يجيب HTML خاماً فقط — **الاستخراج كله سكريبتات adapters** (`parseProductPageHtml` → `priceSource`)، والدليل أن نفس المستخرج يعمل على HTML الـWebView بلا أي مزوّد. البوّة الوحيدة اليوم = المفتاحان في env؛ **لا يوجد عدّاد كلفة يومي** — فجوة يسدّها Budget Guard (P1-A في D20).
 
 ## س1-م · تقييم القدرة الاستخراجية — مصفوفة المتطلبات × المسارات الأربعة (v1.2)
 
@@ -59,6 +60,8 @@
 | **إثبات الجودة والحداثة** | ⚠️ `verified` (سعر>0) + `failureCode` | ✅ **الأفضل**: `discoveryDataStatus` (TITLE_IMAGE_PRICE…) + أدلة قبول الرابط | ❌ فقط `missing[]` | ✅ **الأفضل**: `extraction_confidence` + `field_evidence` + `raw_extracted` + مراجعة/اعتماد + إصدارات (`is_current/superseded`) |
 
 **الأحكام (بالترتيب من الأضعف):**
+
+> **إسناد صحيح (v1.3):** في العمودين أعلاه، «AYWEBS ✅» الفضل فيه **لسكريبتات adapters** (استخراج) لا لمزوّد الجلب Bright Data؛ و«Z Lens» مداخله الخمسة أعلاه — **SerpApi يغطي المدخل البصري فقط** (الرابط يمر عبر تحليل AYWEBS، والباركود واللايف يفكّان محلياً على الجهاز بـMLKit بلا أي مزوّد خارجي).
 
 1. **S BASE = «أقل من المطلوب» للجملة — مؤكّد من الشيفرة.** يلتقط من جوهر التوريد **MOQ فقط**؛ السلّم السعري (`quantity_prices`) وإشارات البيع والثقة والتوفر كلها تصل خاماً من 1688 (أثبتته دراسة Soorce) **ولا تُستخرج** إلى العقد — وهي بالضبط بنود P1 المعتمدة في D18/D20 (`quantityPrices`, `trust{}`, `availability`, الترجمة). الفجوة ليست في المزود بل في طبقة الاستخراج — وتُغلق كلها في P1-B/C بلا تغيير مزود.
 2. **Z Lens:** عمق الاستخراج محدود بسقف SerpApi — لكنه **مناسب لدوره** (اكتشاف يسلّم لقراءة عميقة)، وهو صاحب أفضل ممارسة الجودة (`discoveryDataStatus`) التي تُعمَّم على ProductIntel (`dataFreshness/confidence`).
