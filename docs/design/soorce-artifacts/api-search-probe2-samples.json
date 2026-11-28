@@ -1,0 +1,96 @@
+{
+  "_provenance": "SOORCE upstream-identification probes — 2026-11-26 — GET-only on public /api/search + /sitemap.xml. No auth, no account, no mutation. API GETs across the whole study: 5 (plus 1 failed /api/products/<id> attempt). Saved verbatim from fetcher output; trimmed to meta + 1 sample item per probe.",
+  "probe_A_niche_keyword": {
+    "url": "GET /api/search?keyword=恐龙图案儿童雨伞定制",
+    "meta": { "code": 200, "page": 1, "page_size": 20, "total_count": 1065, "has_next_page": true, "keyword": "恐龙图案儿童雨伞定制" },
+    "first_item": {
+      "item_id": "952857257069",
+      "title": "工厂直供雨伞定制满版数码印伞晴雨两用折叠伞logo定制自动广告伞",
+      "img": "https://cbu01.alicdn.com/img/ibank/O1CN01PJznjh7tKsF1chua_!!2219164331728-0-cib.jpg",
+      "price": 2.08,
+      "currency": "USD",
+      "quantity_prices": [],
+      "moq": null,
+      "sale_info": { "orders_count": 314, "sale_quantity": "已售8.4万+件" },
+      "shop_info": { "is_super_factory": false, "shop_years": 2, "score_info": { "composite_score": null } },
+      "item_repurchase_rate": "16%",
+      "is_ad": true,
+      "soorce_priced": true
+    },
+    "finding": "total_count = 1065 (non-round) for a niche long-tail keyword => real count passthrough; no universal 2000 floor."
+  },
+  "probe_B_page_clamp": {
+    "url": "GET /api/search?keyword=test&page=101",
+    "meta": { "requested_page": 101, "returned_page": 100, "page_size": 20, "total_count": 2000, "has_next_page": false, "keyword": "测试仪" },
+    "finding": "Requested page 101, response says page:100 with has_next_page:false => hard clamp at 100 pages / 2000 results. This matches 1688's NATIVE search cap (~2000 per keyword, per sourabhbgp/1688-scraper store docs) => Soorce passes upstream cap through, another raw-passthrough signal.",
+    "extra_observation": "is_ad:true items appear even on page 100 — ads frozen deep in the result set (live 1688 search ranks ads on page 1) — consistent with stable/frozen ordering per page fetch."
+  },
+  "probe_C_default_feed_no_keyword": {
+    "url": "GET /api/search (no params)",
+    "meta": { "code": 200, "msg": "success", "page": 1, "sort": "default" },
+    "note": "No keyword => returns a default/trending feed, NOT an error. No total_count / has_next_page / keyword echo.",
+    "schema_deltas_vs_keyword_search": [
+      "sale_info: {sale_quantity_90days: '100000+'} instead of {orders_count, sale_quantity:'已售…件'}",
+      "shop_info adds is_powerful_seller (absent in keyword mode)",
+      "delivery_info adds ship_in_48h + free_shipping; ship_in_48h duplicated at item top level",
+      "new field low_refund_rate (absent in keyword mode)",
+      "item_id NUMERIC (940613120428) vs STRING in keyword mode",
+      "price_info.origin_price: '' (empty string) vs numeric in keyword mode",
+      "quantity_prices absent entirely; only moq + quantity_begin",
+      "envelope key order differs (msg first vs code first)"
+    ],
+    "first_item": {
+      "img": "https://cbu01.alicdn.com/img/ibank/O1CN01eilgkj1ggpUv4qRKN_!!2220030834172-0-cib.jpg",
+      "moq": "1",
+      "price": 0.15,
+      "title": "现货节日礼品盒袋手提绳涤纶包装绳织带厂家批发彩色三股扭绳4mm",
+      "item_id": 940613120428,
+      "currency": "USD",
+      "sale_info": { "sale_quantity_90days": "100000+" },
+      "shop_info": { "score_info": { "composite_score": "4.5" }, "shop_years": 2, "is_super_factory": false, "is_powerful_seller": false },
+      "price_info": { "price": 0.15, "sale_price": 0.15, "origin_price": "" },
+      "ship_in_48h": true,
+      "category_path": ["4", "10157"],
+      "delivery_info": { "area_from": ["浙江", "义乌市"], "ship_in_48h": true, "free_shipping": false },
+      "quantity_begin": "1",
+      "low_refund_rate": false,
+      "one_piece_min_order": false,
+      "item_repurchase_rate": "26%",
+      "soorce_priced": true
+    },
+    "finding": "A SECOND raw upstream shape flows through the same endpoint ununified => thin custom middleware doing raw passthrough; rules out a single normalized internal DB and a commercial normalized API for the search layer."
+  },
+  "counter_drift_evidence": {
+    "item_id": "611332695266",
+    "offer": "ph值测试仪ph测试笔… (ph test pen)",
+    "orders_count_capture_A": 9972,
+    "orders_count_capture_B": 9977,
+    "delta": 5,
+    "price_usd_capture_A": 1.84,
+    "price_usd_capture_B": 1.84,
+    "interpretation": "Counters MOVED between two fetches while USD price stayed fixed => search layer is live/near-live from upstream; Soorce pricing layer is precomputed/cached. CONFIRMED hybrid."
+  },
+  "pricing_margin_pairs": {
+    "method": "tier-1 quantity_prices CNY (begin_num == quantity_begin) vs headline USD price; 12 matched pairs across probes A/B + capture A",
+    "pairs_cny_to_usd": [
+      [8.5, 1.84], [12.0, 2.54], [23.5, 4.7], [17.5, 3.58], [18.0, 3.6], [29.9, 5.35],
+      [117.0, 22.07], [2680.0, 485.05], [22.49, 4.52], [19.88, 4.02], [65.0, 12.51], [2800.0, 496.6]
+    ],
+    "implied_cny_per_usd_range": [4.62, 5.64],
+    "market_rate_reference": "~7.2 CNY/USD",
+    "interpretation": "Effective conversion 4.62–5.64 vs market ~7.2 => baked-in service margin ≈ +28%…+56%, regressive (falls as price rises). Probable — assumes headline derives from tier-1; per-item variation suggests a pricing engine, not a flat rate. CONFIRMS price_info is Soorce's own layer on top of raw CNY tiers."
+  },
+  "sitemap_index_probe": {
+    "url": "GET /sitemap.xml",
+    "child_sitemaps": 26,
+    "lastmod_all": "2026-11-28",
+    "note": "All 26 child sitemaps carry ONE uniform lastmod => catalog layer regenerated together on a recurring cadence. Server date appears 2 days ahead of session date (2026-11-26 local) — recorded as-is, cause unknown (build stamp bug or clock)."
+  },
+  "provider_fingerprint_comparison": {
+    "sourabhbgp/1688-scraper (our actor) documented output": ["offerId", "title (English)", "priceUsd", "priceCny", "minOrderQuantity", "sales", "salesCount", "supplierName", "supplierYearsOnPlatform", "starLevel", "sellingPoints", "isAd", "skuId", "sourceKeyword", "url (detail.1688.com)"],
+    "theminerks/1688-wholesale-scraper documented output (search-1 hit)": ["offer_id", "offer_url", "price_cny", "price_max_cny", "price_tiers", "moq", "supplier_name", "supplier_years", "is_trust_pass_member", "is_super_factory", "sales_count", "sales_30d", "free_shipping"],
+    "soorce observed fields": ["item_id", "title (raw Chinese)", "img", "price/currency USD", "price_info{price,sale_price,origin_price}", "quantity_prices[{begin_num,price}]", "category_path", "moq", "quantity_begin", "goods_score", "sale_info{orders_count,sale_quantity zh / sale_quantity_90days}", "delivery_info{area_from,ship_in_48h,free_shipping}", "shop_info{is_super_factory,shop_years,score_info.composite_score,is_powerful_seller}", "item_repurchase_rate", "one_piece_min_order", "is_ad", "low_refund_rate", "ship_in_48h", "soorce_priced"],
+    "verbatim_field_name_matches": [],
+    "conclusion": "NO verbatim field-name match with any surveyed documented output. Soorce preserves raw 1688 web-shaped fields (UI badges) under its own names; source vendor unidentified and NOT provable externally. Official open.1688.com API ruled out (Probable-high): it does not return web-UI badge fields nor leak internal offer-widget JSON."
+  }
+}
