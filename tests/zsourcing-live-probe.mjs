@@ -37,6 +37,10 @@ async function postJson(path, body) {
   return { status: res.status, json, text };
 }
 
+/** فجوة بين الأطوار (درس الجولة الثانية 28/11: حد الطلبات عند Nexscope فعلي — نداءات متتالية خفّضته). */
+const GAP_MS = Number(process.env.ZS_PROBE_GAP_MS ?? 12_000);
+const gap = () => new Promise((resolve) => setTimeout(resolve, GAP_MS));
+
 /** ① البحث بالكلمات — منتجات حقيقية (zh: 瑜伽垫 سجادة يوغا من مثال الوثائق الرسمية). */
 let firstOfferId = null;
 try {
@@ -59,6 +63,7 @@ try {
 }
 
 /** ② البحث بالصورة — PNG حقيقي 1×1؛ الصادق: نجاح أو سبب بأكوادنا ZS_*. */
+await gap();
 try {
   const png = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
@@ -75,6 +80,7 @@ try {
 } catch (error) {
   ok('② البحث بالصورة — الخادم يستجيب', false, String(error?.message ?? error));
 }/** ③ التفاصيل بمعرّف من ① — تسجيل مفاتيح الاستجابة الحية لتقييد types.ts. */
+await gap();
 try {
   if (!firstOfferId) {
     console.log('[zsourcing-live] ③ تفاصيل: تُختبر عند توفر نتيجة حية من ① — لا تخمين معرّفات.');
