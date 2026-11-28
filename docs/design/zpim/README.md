@@ -15,6 +15,8 @@
 | D16 | Commerce Core Integration Boundaries | `D16-commerce-core-boundaries.md` | حدود المسؤوليات الخمسة + نقطة الالتحام الوحيدة (SbaseItem→سطر سلة) + منع تكرار المحركات |
 | D17 | Cost, Reliability & Scalability | `D17-cost-reliability-scalability.md` | كلفة شهرية بثلاثة سيناريوهات (82.8$/405.9$/1591$ بافتراضات معلنة) + مخاطر الموثوقية + التوسع |
 | D18 | Recommended S BASE Architecture | `D18-recommended-sbase-architecture.md` | التوصية النهائية: تبنّي/رفض من Soorce + خريطة الدمج + Roadmap مرتب + Checklist مراجعة المالك (10 بنود) |
+| D19 | **ZAYROVI Architecture Audit** | `D19-zayrovi-architecture-audit.md` | تدقيق قراءة-فقط للبنية الحالية: 5 مسارات اكتساب، 3 عقود متوازية، quote-token مكرر، `discovery_sources` جاهز ومهمَل — إجابات أسئلة المالك الستة بمراجع أسطر |
+| D20 | **ZPIC Final Design & Execution Plan** | `D20-zpic-final-design-execution-plan.md` | التصميم النهائي للنواة المشتركة (ZPIC = تدرّج ZPIM بعد التدقيق): عقد ProductIntel v1 موحّد، استراتيجية wrap-not-rewrite، خطة P1-A/B/C+P2 ببوّات، ومعايير قبول قابلة للفحص |
 
 ## حزمة شواهد SOORCE المحفوظة (المصدر المرجعي للجميع)
 
@@ -31,7 +33,8 @@
 2. بنيتنا القائمة (actor + SbaseItem + pricing بإصدار) هي **النوع نفسه** — لا تغيير بنيوي مطلوب، وتوحيد+كاش+ترجمة هي الفجوات الوحيدة.
 3. ZPIM يضيف الطبقات الناقصة خلف عقد ثابت، مع Raw Store وShape Detection وFailover — استقلالية كاملة عن المزود.
 4. الكلفة تحت السيناريوهات الثلاثة ≤ ~1600$/شهر عند توسع كبير، محمية بسقف يومي وكاش — وقرار السحب الذاتي مؤجل لما بعد P2.
-5. **Commerce Core أولاً**: الحزمة جاهزة لخريطة S BASE ولا تعطّل الترتيب المتفق عليه — التنفيذ بعد التوقيع فقط.
+5. **التدقيق (D19) غيّر النطاق**: الوظائف مكررة جزئياً في ثلاث منظومات ⇒ النواة تتدرج من ZPIM إلى **ZPIC مشتركة** (D20) — wrap-not-rewrite، بلا مساس بـaywebs الداخلي ولا `/api/zayrovix`.
+6. **Commerce Core أولاً**: الحزمة جاهزة لخريطة S BASE ولا تعطّل الترتيب المتفق عليه — التنفيذ بعد التوقيع فقط (D18-10 + D20-16).
 
 ## التحميل
 
