@@ -1,0 +1,38 @@
+# Z Sourcing — نقطة التوقف الأولى: شواهد حية من الخادم المنشور (أمر المالك 28/11).
+# لماذا workflow؟ بيئة تطوير Agant محجوبة عن نطاقات خارج القائمة المسموحة،
+# بينما runner GitHub يتصل بRender بحرية. الاختبار يُشغَّل **فقط عند ZS_LIVE_PROBE=1**
+# (dispatch يدوي أو مجدول)، ولا يحمل أي رموز — العنوان من input والمفتاح يبقى
+# في Render env (الاختبار يتحقق من الاستجابات لا من المفتاح).
+name: "Z Sourcing — sonde vivante (point d'arrêt)"
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: "Base URL du serveur publié"
+        required: false
+        default: "https://ayrovi-beta1-moo8.onrender.com"
+      run_image:
+        description: "Inclure la sonde image (POST /api/zsourcing/image)"
+        required: false
+        default: "1"
+
+permissions:
+  contents: read
+
+jobs:
+  live-checkpoint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install (root only — probe needs no native build)
+        run: npm ci --ignore-scripts
+      - name: Run live probe (vitest filter)
+        env:
+          ZS_LIVE_PROBE: "1"
+          ZS_LIVE_BASE_URL: ${{ inputs.base || 'https://ayrovi-beta1-moo8.onrender.com' }}
+        run: npx vitest run tests/zsourcing-live-probe.test.ts --reporter=basic
