@@ -20,6 +20,22 @@ export interface ZSourcingProduct {
   productUrl?: string;
   /** سعر القطعة باليوان (بحث الصورة يعيده موثّقاً؛ التفاصيل تُثبت عند نقطة التوقف). */
   priceCny?: number | null;
+  /**
+   * حقول مرصودة حيّاً من شواهد CI 28/11 (بحث 瑜伽垫 — run 46160439698):
+   * salesOrderCount, deliveryTime, quantityBegin, availableDate, levelName,
+   * title, shopUrl, asinUrl, estimatedSalesAmount, consignPrice, unit,
+   * sourceType, price, salesQuantity — دلالة quantityBegin (مرشّح MOQ البحث)
+   * تُثبَّت عند أول سلة حية.
+   */
+  quantityBegin?: number | null;
+  salesOrderCount?: number | null;
+  estimatedSalesAmount?: number | null;
+  salesQuantity?: number | null;
+  unit?: string | null;
+  levelName?: string | null;
+  availableDate?: string | null;
+  shopUrl?: string | null;
+  sourceType?: string | null;
   /** سعر الوكالة/التسويق (`products.consignPrice` في بحث الكلمات). */
   consignPrice?: number | null;
   currency?: string | null;

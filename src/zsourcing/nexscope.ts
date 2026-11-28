@@ -93,7 +93,7 @@ async function postOnce(
       'بوّة الدخول عند Nexscope طلبت تخفيف النداءات — احترم Retry-After.',
       response.status === 429 ? 429 : 503,
       String(response.status),
-      Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : null,
+      Number.isFinite(retryAfter) && retryAfter >= 0 ? retryAfter * 1000 : null,
     );
   }
 
@@ -144,7 +144,19 @@ function mapProduct(rawItem: unknown): ZSourcingProduct | null {
     priceCny: num(raw.price),
     consignPrice: num(raw.consignPrice),
     currency: str(raw.currency),
-    moq: raw.moq !== undefined && raw.moq !== null ? (raw.moq as string | number) : null,
+    // moq موحّدة: صورة ترسل moq، والبحث بالكلمات يرسل quantityBegin (مرصود حيّاً 28/11).
+    moq: raw.moq !== undefined && raw.moq !== null ? (raw.moq as string | number)
+      : raw.quantityBegin !== undefined && raw.quantityBegin !== null ? (raw.quantityBegin as string | number)
+      : null,
+    quantityBegin: num(raw.quantityBegin),
+    salesOrderCount: num(raw.salesOrderCount),
+    estimatedSalesAmount: num(raw.estimatedSalesAmount),
+    salesQuantity: num(raw.salesQuantity),
+    unit: str(raw.unit),
+    levelName: str(raw.levelName),
+    availableDate: str(raw.availableDate),
+    shopUrl: str(raw.shopUrl),
+    sourceType: str(raw.sourceType),
     monthlySold: str(raw.monthSold ?? raw.monthlySold),
     repurchaseRate: str(raw.rePurchaseRate ?? raw.repurchaseRate),
     tradeScore: str(raw.tradeScore),
@@ -171,6 +183,33 @@ function pickProductList(data: unknown): unknown[] {
   return [];
 }
 
+/**
+ * POST مع حارس بوّة الدخول: 429/503 مرفوض **عند البوّة — لم يُنفَّذ فوق**،
+ * فإعادة واحدة بعد نافذة Retry-After الموثّقة ليست «تكرار طلبات» (شرط الأمر:
+ * «إعادة محاولة بطريقة لا تسبب تكرار الطلبات» — التكرار المحرّم هو ما يُصاحب
+ * طلباً نُفِّذ فعلاً وأدّى إلى كلفة). ما زال مرفوضاً بعد الإعادة ⇒ الخطأ الصادق
+ * يصعد بلا محاولات إضافية.
+ */
+const RATE_LIMIT_MAX_WAIT_MS = 45_000;
+const RATE_LIMIT_DEFAULT_WAIT_MS = 2_000;
+async function postWithAdmissionGuard(
+  apiKey: string,
+  endpoint: string,
+  body: Record<string, unknown>,
+  signal: AbortSignal,
+): Promise<NexscopeEnvelope> {
+  try {
+    return await postOnce(apiKey, endpoint, body, signal);
+  } catch (error) {
+    if (error instanceof ZSourcingError && error.code === 'ZS_NEXSCOPE_RATE_LIMIT') {
+      const waitMs = Math.min(error.retryAfterMs ?? RATE_LIMIT_DEFAULT_WAIT_MS, RATE_LIMIT_MAX_WAIT_MS);
+      if (waitMs > 0) await new Promise((resolve) => setTimeout(resolve, waitMs));
+      return await postOnce(apiKey, endpoint, body, signal); // إعادة واحدة حصراً
+    }
+    throw error;
+  }
+}
+
 export function createNexscopeProvider(options: { apiKey?: string; now?: () => number } = {}): ZSourcingProvider {
   const apiKey = (options.apiKey ?? process.env.NEXSCOPE_API_KEY ?? '').trim();
   const now = options.now ?? (() => Date.now());
@@ -192,7 +231,7 @@ export function createNexscopeProvider(options: { apiKey?: string; now?: () => n
       if (input.priceEndCny !== undefined) body.endPrice = input.priceEndCny;
       if (input.moqStart !== undefined) body.beginStartQuantity = input.moqStart;
       if (input.moqEnd !== undefined) body.endStartQuantity = input.moqEnd;
-      const envelope = await postOnce(apiKey, ENDPOINT_KEYWORD_SEARCH, body, AbortSignal.timeout(nexscopeTimeoutMs()));
+      const envelope = await postWithAdmissionGuard(apiKey, ENDPOINT_KEYWORD_SEARCH, body, AbortSignal.timeout(nexscopeTimeoutMs()));
       const data = (typeof envelope.data === 'object' && envelope.data !== null ? envelope.data : {}) as Record<string, unknown>;
       return mapSearch(pickProductList(data), 'dl/productSearch', startedAt, {
         pageIndex: Number(body.pageIndex),
@@ -203,7 +242,7 @@ export function createNexscopeProvider(options: { apiKey?: string; now?: () => n
 
     async searchByImage(input) {
       const startedAt = now();
-      const envelope = await postOnce(apiKey, ENDPOINT_IMAGE_SEARCH, {
+      const envelope = await postWithAdmissionGuard(apiKey, ENDPOINT_IMAGE_SEARCH, {
         imageBase64: input.imageBase64, // نقي بلا بادئة — الموثّق.
         page: input.page ?? 1,
         pageSize: Math.min(Math.max(input.pageSize ?? 20, 1), 50), // الموثّق: ≤50
@@ -221,7 +260,7 @@ export function createNexscopeProvider(options: { apiKey?: string; now?: () => n
         offerId: String(input.offerId),
         ...(input.currency ? { currency: input.currency.toUpperCase().slice(0, 3) } : {}),
       };
-      const envelope = await postOnce(apiKey, ENDPOINT_DETAIL, body, AbortSignal.timeout(nexscopeTimeoutMs()));
+      const envelope = await postWithAdmissionGuard(apiKey, ENDPOINT_DETAIL, body, AbortSignal.timeout(nexscopeTimeoutMs()));
       return (typeof envelope.data === 'object' && envelope.data !== null ? envelope.data : {}) as Record<string, unknown>;
     },
   };

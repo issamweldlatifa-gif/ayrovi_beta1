@@ -122,18 +122,32 @@ describe('Z Sourcing — طبقة Nexscope (موثّق رسمي، صفر شبك�
     expect(thrown?.message).not.toContain(KEY);
   });
 
-  test('موثّق: 429 مع Retry-After ⇒ RATE_LIMIT 429 — ومرة واحدة حصراً (لا إعادة مكرّرة)', async () => {
-    const calls = stubFetch(() => new Response(null, { status: 429, headers: { 'retry-after': '3' } }));
+  test('موثّق: 429 مع Retry-After ⇒ إعادة واحدة بعد النافذة (الطلب مرفوض عند البوّة — لم يُنفَّذ فوق، فليس تكراراً)', async () => {
+    const calls = stubFetch(() => new Response(null, { status: 429, headers: { 'retry-after': '0' } }));
     const provider = createNexscopeProvider();
     let thrown: ZSourcingError | null = null;
     try { await provider.searchByKeyword({ zhQuery: '包' }); } catch (error) { thrown = error as ZSourcingError; }
     expect(thrown?.code).toBe('ZS_NEXSCOPE_RATE_LIMIT');
     expect(thrown?.status).toBe(429);
-    expect(thrown?.retryAfterMs).toBe(3000);
-    expect(calls.length).toBe(1); // لا إعادة تلقائية — لا طلبات مكرّرة (قاعدة الأمر)
+    expect(thrown?.retryAfterMs).toBe(0);
+    expect(calls.length).toBe(2); // مرفوضة + إعادة النافذة — ما زال مرفوضاً ⇒ يصعد بلا محاولات ثالثة
   });
 
-  test('عطل نقل ⇒ ZS_NEXSCOPE_NETWORK ومرة واحدة حصراً', async () => {
+  test('موثّق: 429 ثم نجاح — إعادة النافذة تُجلب النتيجة بلا طلب ثالث', async () => {
+    let callIndex = 0;
+    const calls = stubFetch(() => {
+      callIndex += 1;
+      return callIndex === 1
+        ? new Response(null, { status: 429, headers: { 'retry-after': '0' } })
+        : envelopeOk({ products: [{ asin: '777000111222' }] });
+    });
+    const provider = createNexscopeProvider();
+    const result = await provider.searchByKeyword({ zhQuery: '包' });
+    expect(result.products[0]?.offerId).toBe('777000111222');
+    expect(calls.length).toBe(2);
+  });
+
+  test('عطل نقل ⇒ ZS_NEXSCOPE_NETWORK ومرة واحدة حصراً — الطلب قد يكون نُفِّذ فوق فلا إعادة (التكرار المحرّم)', async () => {
     const calls = stubFetch(() => { throw new Error('socket hang up'); });
     const provider = createNexscopeProvider();
     let thrown: ZSourcingError | null = null;
