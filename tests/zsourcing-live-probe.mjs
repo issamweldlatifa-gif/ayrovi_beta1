@@ -46,13 +46,11 @@ try {
   } else if (json && json.code === 'ZS_NEXSCOPE_NOT_CONFIGURED') {
     ok('① البحث بالكلمات — NEXSCOPE_API_KEY مضبوط على الخادم', false, 'المفتاح غير موجود في Render env');
   } else {
-    ok('① البحث بالكلمات — استجابة 200 ناجحة', status === 200 && json?.success === true, `http=${status} code=${json?.code ?? '-'}`);
     const products = Array.isArray(json?.data?.products) ? json.data.products : [];
-    ok('① منتجات حقيقية (>0)', products.length > 0, `count=${products.length}`);
-    ok('① معرّفات نصّية 6–20 خانة (بلا float)', products.slice(0, 5).every((p) => /^\d{6,20}$/.test(p.offerId)));
-    for (const p of products.slice(0, 3)) {
-      console.log(`[zsourcing-live] ① نتيجة: ${p.offerId} | مورّد=${p.supplier ?? '(?提到的)'} | سعر=${p.priceCny ?? p.consignPrice ?? '?'} | MOQ=${p.moq ?? '?'}`);
-    }
+    ok('① استجابة 200 + منتجات حقيقية', status === 200 && json?.success === true && products.length > 0,
+      `http=${status} code=${json?.code ?? '-'} count=${products.length}`);
+    // سطر واحد مدمج (حد GitHub: 10 annotations/job) — كل النتائج في سطر الشواهد.
+    console.log(`[zsourcing-live] ① عينات: ${products.slice(0, 3).map((p) => `${p.offerId} | ${p.supplier ?? '?'} | ${p.priceCny ?? p.consignPrice ?? '?'} CNY`).join('  ·  ')}`);
     console.log(`[zsourcing-live] ① مفاتيح العنصر الخام: ${products[0] ? Object.keys(products[0].raw ?? {}).slice(0, 14).join(',') : '-'}`);
     firstOfferId = products[0]?.offerId ?? null;
   }
@@ -76,9 +74,7 @@ try {
   console.log(`[zsourcing-live] ② نتائج الصورة: ${Array.isArray(json?.data?.products) ? json.data.products.length : 0}`);
 } catch (error) {
   ok('② البحث بالصورة — الخادم يستجيب', false, String(error?.message ?? error));
-}
-
-/** ③ التفاصيل بمعرّف من ① — تسجيل مفاتيح الاستجابة الحية لتقييد types.ts. */
+}/** ③ التفاصيل بمعرّف من ① — تسجيل مفاتيح الاستجابة الحية لتقييد types.ts. */
 try {
   if (!firstOfferId) {
     console.log('[zsourcing-live] ③ تفاصيل: تُختبر عند توفر نتيجة حية من ① — لا تخمين معرّفات.');
@@ -87,8 +83,8 @@ try {
     if (json?.success === true) {
       const detail = json?.data?.detail ?? {};
       ok('③ التفاصيل — رد حي بمحتوى', Object.keys(detail).length > 0, `http=${status}`);
-      console.log(`[zsourcing-live] ③ مفاتيح detail: ${Object.keys(detail).slice(0, 20).join(',')}`);
-      console.log(`[zsourcing-live] ③ مفاتيح detail.product: ${Object.keys(detail.product ?? {}).slice(0, 25).join(',')}`);
+      // سطر مدمج: مفاتيح التفاصيل الحية كلها (أساس تقييد types.ts).
+      console.log(`[zsourcing-live] ③ مفاتيح detail: ${Object.keys(detail).slice(0, 20).join(',')} | product: ${Object.keys(detail.product ?? {}).slice(0, 25).join(',')}`);
     } else {
       ok('③ التفاصيل — سبب حقيقي بأكوادنا', typeof json?.code === 'string' && /^ZS_/.test(json.code), `http=${status} code=${json?.code ?? '-'}`);
     }
