@@ -1,27 +1,22 @@
 # Z Sourcing — نقطة التوقف الأولى: شواهد حية من الخادم المنشور (أمر المالك 28/11).
-# لماذا workflow؟ بيئة تطوير Agant محجوبة عن نطاقات خارج القائمة المسموحة،
-# بينما runner GitHub يتصل بRender بحرية. الاختبار يُشغَّل **فقط عند ZS_LIVE_PROBE=1**
-# (dispatch يدوي أو مجدول)، ولا يحمل أي رموز — العنوان من input والمفتاح يبقى
-# في Render env (الاختبار يتحقق من الاستجابات لا من المفتاح).
+# runner GitHub يتصل بRender بحرية حيث بيئة التطوير محجوبة عن النطاقات.
+# السكريبت Node خالص (صفر اعتماديات — لا npm ci، لا vitest)، ولا يحمل رموزاً —
+# العنوان من input والمفتاح يبقى في Render env.
+# Node مثبّت 22.23.4 حرفياً — scripts/check-node-security.cjs يشترط مطابقة .nvmrc.
 name: "Z Sourcing — sonde vivante (point d'arrêt)"
 
 on:
-  # الإطلاق الذاتي: أي push يلمس ملفات الجامع نفسها يشغّل الشواهد الحية —
-  # (حيلة التسجيل: workflows الفرع غير الافتراضي لا تظهر في UI إلا بعد أول run).
+  # الإطلاق الذاتي: أي push يلمس الجامع نفسه يشغّل الشواهد (حيلة تسجيل الفرع).
   push:
     paths:
       - ".github/workflows/zsourcing-live-probe.yml"
-      - "tests/zsourcing-live-probe.test.ts"
+      - "tests/zsourcing-live-probe.mjs"
   workflow_dispatch:
     inputs:
       base:
         description: "Base URL du serveur publié"
         required: false
         default: "https://ayrovi-beta1-moo8.onrender.com"
-      run_image:
-        description: "Inclure la sonde image (POST /api/zsourcing/image)"
-        required: false
-        default: "1"
 
 permissions:
   contents: read
@@ -29,24 +24,21 @@ permissions:
 jobs:
   live-checkpoint:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-      - name: Install (full — runners build native deps; esbuild needs its scripts)
-        run: npm ci
-      - name: Run live probe (vitest filter) — evidence emitted as annotations
+          node-version: 22.23.4
+      - name: Live checkpoint probe (pure Node — no install)
         env:
-          ZS_LIVE_PROBE: "1"
           ZS_LIVE_BASE_URL: ${{ inputs.base || 'https://ayrovi-beta1-moo8.onrender.com' }}
         run: |
           set -o pipefail
-          npx vitest run tests/zsourcing-live-probe.test.ts --reporter=basic 2>&1 | tee /tmp/probe.log
+          node tests/zsourcing-live-probe.mjs 2>&1 | tee /tmp/probe.log
           code=$?
           # الشواهد تصعد annotations — تُقرأ من gh run view بلا وصول للّوجز الخام
           grep '\[zsourcing-live\]' /tmp/probe.log | sed 's/::/──/g' | while IFS= read -r line; do
-            echo "::notice title=ZS-live::${line#*[zsourcing-live] }"
+            echo "::notice title=ZS-live::${line#\[zsourcing-live\] }"
           done
           exit $code
