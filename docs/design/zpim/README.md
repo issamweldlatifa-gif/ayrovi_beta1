@@ -15,8 +15,8 @@
 | D16 | Commerce Core Integration Boundaries | `D16-commerce-core-boundaries.md` | حدود المسؤوليات الخمسة + نقطة الالتحام الوحيدة (SbaseItem→سطر سلة) + منع تكرار المحركات |
 | D17 | Cost, Reliability & Scalability | `D17-cost-reliability-scalability.md` | كلفة شهرية بثلاثة سيناريوهات (82.8$/405.9$/1591$ بافتراضات معلنة) + مخاطر الموثوقية + التوسع |
 | D18 | Recommended S BASE Architecture | `D18-recommended-sbase-architecture.md` | التوصية النهائية: تبنّي/رفض من Soorce + خريطة الدمج + Roadmap مرتب + Checklist مراجعة المالك (10 بنود) |
-| D19 | **ZAYROVI Architecture Audit** | `D19-zayrovi-architecture-audit.md` | تدقيق قراءة-فقط للبنية الحالية: 5 مسارات اكتساب، 3 عقود متوازية، quote-token مكرر، `discovery_sources` جاهز ومهمَل — إجابات أسئلة المالك الستة بمراجع أسطر |
-| D20 | **ZPIC Final Design & Execution Plan** | `D20-zpic-final-design-execution-plan.md` | التصميم النهائي للنواة المشتركة (ZPIC = تدرّج ZPIM بعد التدقيق): عقد ProductIntel v1 موحّد، استراتيجية wrap-not-rewrite، خطة P1-A/B/C+P2 ببوّات، ومعايير قبول قابلة للفحص |
+| D19 | **ZAYROVI Architecture Audit · v1.1 منقّحة** | `D19-zayrovi-architecture-audit.md` | تدقيق قراءة-فقط (منقّح بعد مراجعة المالك): **4 مسارات اكتساب + سجل مركزي منفصل**، 3 عقود متوازية، quote-token مكرر بملكية خارج ZPIC، كاش بسياسات متمايزة — إجابات أسئلة المالك الستة بمراجع أسطر |
+| D20 | **ZPIC Final Design & Execution Plan · v1.1 منقّح** | `D20-zpic-final-design-execution-plan.md` | التصميم المنقّح بعد مراجعة المالك: مبدأ «تنظّم لا تستحوذ»، اتجاهات تبعية بلا دورات، ProductIntel بإثبات المصدر والحداثة، ملكية Quote-Token لـCommerce Core، سياسات Raw/كاش/ترجمة صريحة غير معلقة على AI Core، وجدول ملكية جامع |
 
 ## حزمة شواهد SOORCE المحفوظة (المصدر المرجعي للجميع)
 

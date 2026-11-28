@@ -1,109 +1,191 @@
-# D20 — ZPIC: التصميم النهائي وخطة التنفيذ (بعد تدقيق D19)
-**الحالة:** مسودة v1.0 — بانتظار مراجعة المالك. **NO CODE — التنفيذ لا يبدأ قبل توقيع Checklist §8.**
-**تعريف الاسم:** **ZPIC = ZAYROVI Product Intelligence Core** — اسم أمر المالك لهذه النواة. علاقته بالحزمة: ZPIM (D14) كان تصميم الطبقة الوسيطة لـS BASE؛ التدقيق (D19) أثبت أن وظائفها مكررة جزئياً في ثلاث منظومات ⇒ **ZPIC هو ZPIM متدرجاً من «وسيط S BASE» إلى «نواة ذكاء منتجات مشتركة» تخدم Z Lens وS BASE وAYWEBS** — قرار تصميمي مرفوع لاعتماد المالك.
+# D20 — ZPIC: التصميم النهائي وخطة التنفيذ
+**الحالة:** **v1.1 — منقّح بعد مراجعة المالك (26/11) · بانتظار المراجعة النهائية — غير معتمد للتنفيذ. NO CODE.**
+**الاسم:** **ZPIC = ZAYROVI Product Intelligence Core** — النواة المشتركة لذكاء بيانات المنتجات (تدرّج ZPIM بعد تدقيق D19).
+**سجل المراجعة v1.0 → v1.1** (معالجة ملاحظات المالك الخمس + الإضافية):
+
+| # | الملاحظة | موضع المعالجة |
+|---|---|---|
+| 1 | ملكية Quote-Token وحدودها مع Commerce Core | §4 — ملكية Commerce Core، توحيد تنفيذي خارج ZPIC |
+| 2 | ProductIntel يحفظ مصدر كل حقل وتاريخ الجلب/التحقق والحداثة | §2 — fieldProvenance/verifiedAt/dataFreshness/confidence + امتدادات لكل مصدر |
+| 3 | اتجاه التبعيات ومنع الدورات (الرسم v1.0 كان ملتبساً في BrightData/AYWEBS) | §1 + §8 — رسم موجه صريح وقواعد منع الدورات |
+| 4 | سياسة Raw Store والكاش والترجمة، وفك ارتباط ZPIC باكتمال AI Core | §5 · §6 · §7 |
+| + | فصل سجل المصادر عن مسارات الاكتساب (D19) | D19 v1.1 س1 + §1 هنا |
 
 ---
 
-## §1 · المعمارية النهائية
+## §0 · المبدأ الحاكم (يثبّته المالك)
+
+> **ZPIC نواة تنظّم ذكاء بيانات المنتجات — لا نواة تستحوذ على مسؤوليات الأنظمة الأخرى.**
+> تستقل Z Lens وS BASE وAYWEBS بوظائفها، وتحصل على بنية بيانات مشتركة قابلة للتوسع. ما لا تملكه ZPIC صراحة:
+> توقيع/تحقق الأسعار (Commerce Core) · التوصيات · Best Sellers · Analytics · أي منطق سلة/دفع/طلب.
+
+## §1 · المعمارية المحدثة — اتجاهات صريحة وملكية لكل connector
 
 ```text
-   Z Lens (zayrovix)      S BASE (sbase)        AYWEBS (aywebs)
-   lens·candidates·UX     lanes·scoring·MOQ     adapters §8·متاجر
-   ═══════════╦═══════════════╦═════════════════╦════════════
-              ║   ACL: عقد ProductIntel + واجهات ZPIC فقط   ║
-   ┌──────────▼───────────────▼─────────────────▼──────────┐
-   │                    ZPIC CORE                          │
-   │ ① Connector Registry (فوق discovery_sources القائم)   │
-   │ ② Acquisition Engine + Budget Guard (بوّة واحدة)      │
-   │ ③ Raw Store (جديد — درس Soorce D13)                   │
-   │ ④ Normalization → ProductIntel v1 (عقد واحد بدل 3)    │
-   │ ⑤ Translation Engine (ai-core + معجم zh صناعة)        │
-   │ ⑥ Image Line (فوق imageIsolation/imageWork القائمين)  │
-   │ ⑦ Dedup (sourceProductId+domain / offer_id)           │
-   │ ⑧ Supplier Intelligence (عام مجهول / خاص لـCRM)       │
-   │ ⑨ Pricing Integration (قراءة fx_extra_rates فقط)      │
-   │ ⑩ Catalog + Cache Layer (سياسة TTL واحدة بدل 3)       │
-   │ ⑪ Quote-Token Service (دمج priceQuote+quoteToken)     │
-   │ ⑫ Quality & Validation (فهرس أكواد خطأ واحد)          │
-   └───────────────────────┬───────────────────────────────┘
-     Connectors: Apify(1688) · BrightData(via AYWEBS adapters كما هي)
-     · SerpApi(lens يبقى داخلياً في Z Lens — ZPIC لا يعيد بناءه)
-     · CRM-jobs · مستقبلاً: Official API / Yiwugo
-   Commerce Core ◄── حدود D16 (لا ZPIC فيه ولا Commerce Core في ZPIC)
+   Z Lens (zayrovix)          S BASE (sbase)           AYWEBS (aywebs)
+   lens·candidates·UX         lanes·scoring·MOQ        adapters §8·متاجر
+   مالك مزوّده: SerpApi        مالك مزوّده: Apify-1688    مالك مزوّده: BrightData
+        │                            │                        │
+        │ pull (عند الحاجة)           │ pull (عميل أول)         │ push (نشر اختياري عند ملامسة ميزات جديدة)
+        │                            │                        │  — BrightData لا يخرج من AYWEBS أبداً
+   ┌────▼────────────────────────────▼────────────────────────▼────┐
+   │                     ZPIC CORE (ملك الحدود هذي)                 │
+   │ ① Connector Registry — سجل مركزي فوق discovery_sources        │
+   │     مزوّدو ZPIC الحاليون: Apify(1688) فقط                     │
+   │     مستقبل: Official API · Yiwugo · مزوّد ترجمة — كلها        │
+   │     بconnectors يملكها ZPIC بنفسه (لا استعارة مزوّد منظومة)    │
+   │ ② Acquisition Engine + Budget Guard                           │
+   │ ③ Raw Store (بسياسة §5)   ④ Normalization → ProductIntel (§2) │
+   │ ⑤ Translation (provider-adapter، §7)  ⑥ Image Line            │
+   │ ⑦ Dedup  ⑧ Supplier Intel  ⑨ FX قراءة فقط (§3)  ⑩ Cache (§6) │
+   │ ⑪ Quality & Validation                                        │
+   └──────────────────────────────┬────────────────────────────────┘
+                    خدمة الثقة السعرية الموحّدة (خارج ZPIC — §4)
+                    مالكها: Commerce Core · موضعها: طبقة services
+                    مستهلكوها: AYWEBS · zayrovix · Commerce Core
+   Analytics ◄── بيانات مبيعات فعلية        Recommendations ◄── تفاعل + منتجات
+   Best Sellers ◄── مبيعات فعلية            (الثلاثة تطلب من ZPIC بيانات منظمة فقط)
 ```
 
-**قواعد بنيوية غير قابلة للتفاوض:**
-1. wrap-not-rewrite: أي داخلي قائم يعمل — ZPIC يستهلكه عبر عقده، لا يعيد بناءه.
-2. `/api/zayrovix` و`src/aywebs/*` الداخلية **لا تُلمس** (قيد المالك الدائم) — دخولهما لـZPIC تدريجي وبإضافات جديدة فقط.
-3. ZPIC لا يستدعي المنظومات ولا Commerce Core — هو مزوّد يُستهلك.
-4. S BASE يبقى مستقلاً عن أي مزود: تبديل connector لا يمس المحرك (D15 §الاستقلالية).
+**قواعد الاتجاه (تُقرأ مع §8):**
+1. اتجاه واحد دائماً: **المستهلك → ZPIC → مزوّد ZPIC الخارجي**. ZPIC لا يستدعي أي منظومة، ولا أحد يستدعي داخلها عكسياً.
+2. كل منظومة تبقى **مالك مزوّدها الحالي**: SerpApi ملك Z Lens، BrightData ملك AYWEBS، Apify-1688 ملك S BASE اليوم — وينتقل لـZPIC فقط عند بوّة P1-B كconnector يملكه ZPIC ويُستهلك به.
+3. AYWEBS تشارك ZPIC عبر **النشر** (push) عند ملامسة ميزات جديدة، لا عبر قيادة adaptersها من ZPIC.
+4. لا استعارة مزوّد بين المنظومات: من يحتاج مزوّداً جديداً يملك connectorه وميزانيته.
 
-## §2 · عقد ProductIntel v1 — توحيد العقود الثلاثة
+## §2 · عقد ProductIntel v1 — المطور بإثبات المصدر والحداثة
 
-| المفهوم | AYWEBS اليوم | S BASE اليوم | Z Lens اليوم | **ProductIntel v1** |
-|---|---|---|---|---|
-| هوية المصدر | `sourceProductId+sourceDomain` | `offer_id` (1688) | ضمن candidate | `source{kind, sourceId, domain, nativeId}` |
-| سعر وعملة | `price+currency` | `price/currency` + tiers CNY | ضمن candidate | `price{amount, currency, tiers[]}` — القرار التجاري خارج العقد |
-| متغيرات | `variantGroups+variants` (متوفر لكل فرعية + `variantUrl`) | SKU مصفوفة + `recordVariantContract` | ضمن candidate | `variants[]` + `variantGroups[]` (دلالات AYWEBS تعمم) |
-| توفر | `AyWebsAvailabilityState` | غير موجود | variantAvailability | `availability{state, reason, checkedAt}` — enum AYWEBS يعمم |
-| صور | `images[]` | img + متغيرات | ضمن candidate | `images[]` + مرجع مرآة اختياري |
-| مورّد | بيانات متجر | shop_info مسقط | — | `supplier{public, private}` — الخاص لـCRM فقط |
-| ثقة | — | shop_years/super_factory خام | — | `trust{}` |
-| رابط أصلي | `sourceUrl` | رابط detail.1688 في العقد | — | `sourceUrl` — **لا يُحذف أبداً (D15)** |
-| أصل خام | — | — | — | `raw{runId, fetchedAt, ref→Raw Store}` |
-| ترجمة | — | — | — | `translations{zh, ar?, fr?, quality}` |
+| المفهوم | الحقول |
+|---|---|
+| هوية المصدر | `source{providerId (من السجل), sourceId, domain, nativeId}` |
+| **الحداثة والإثبات (جديد v1.1)** | `fetchedAt` (وقت الجلب) · `verifiedAt` (آخر تحقق حي — null إن لم يتحقق) · `dataFreshness` (مشتق: fresh/aging/stale بحسب نوع البيانات في مصفوفة §6) · `confidence` (مبلَّغ عنه من المزود أو محسوب) · **`fieldProvenance{field → {origin: providerId\|response, responseRef, fetchedAt}}`** — أصل كل معلومة (العنوان من مزود، الصورة من مصدر آخر، السعر من استجابة أخرى) لا يُفقد بعد توحيد JSON |
+| سعر وعملة | `price{amount, currency, tiers[]}` — القرار التجاري خارج العقد |
+| متغيرات | `variants[] + variantGroups[]` (دلالات AYWEBS تعمم — مع variantUrl لكل فرعية) |
+| توفر | `availability{state, reason, checkedAt}` — enum AYWEBS يعمم |
+| صور | `images[]` + مرجع مرآة اختياري |
+| مورّد | `supplier{public, private}` — الخاص لـCRM فقط |
+| ثقة | `trust{shopYears, isSuperFactory, repurchaseRate, saleInfo}` |
+| رابط أصلي | `sourceUrl` — لا يُحذف أبداً |
+| أصل خام | `raw{runId, fetchedAt, ref → Raw Store}` |
+| ترجمة | `translations{zh, ar?, fr?, quality}` |
 
-**قاعدة التطور:** العقد يُضاف إليه فقط (v1→v2 additive)؛ أي كسر حقل = إصدار جديد + مراجعة الـE2E الثلاثي.
+**الامتدادات التخصصية (لا يفقد أي نظام خصوصيته — طلب المالك):**
 
-## §3 · استراتيجية الترحيل (additive فقط)
+| مساحة الامتداد | حقولها (تبقى كما هي دلالياً) |
+|---|---|
+| `ext.sbase` | `moq`, `quantityBegin`, `onePieceMinOrder`, `saleInfoZh`, دلالات الجملة |
+| `ext.aywebs` | `variantUrl`, `availabilityReason`, `purchaseMode`, store-specific attributes |
+| `ext.zlens` | `visualMatch{box{x,y,w,h}, matchConfidence, grounding}` |
 
-1. **لا migrations قبل المراجعة النهائية** (قاعدة المالك). التصميم يحتاج جديدين فقط: `zpic_raw_items` (خام TTL) و`zpic_cache_meta` — والباقي قراءة جداول قائمة (`discovery_sources`, `pricing_config`, `crm_extracted_products`).
-2. **الترتيب الاتصالي:** S BASE أولاً (عميل أول، لأنه الأحدث والأصغر 2,318 سطراً وبلا كاش) → ثم استهلاك اختياري من Z Lens وAYWEBS عند ملامسة ميزات جديدة فقط — **لا إعادة كتابة رجعية**.
-3. quote-token: الخدمة الموحّدة تُبنى بالتوازي، والنقاط القديمة (`priceQuote`/`quoteToken`) تعمل حتى ترحيل نقاط الاستدعاء واحدة-واحدة مع اختباراتها — الصفر-تعطيل للسلة أثناء الترحيل.
-4. كل مرحلة تنتهي بـintegration test أخضر + مراجعة المالك قبل التالية.
+**قواعد:** الامتدادات اختيارية للاستهلاك وإلزامية للحفظ عند ورودها؛ العقد additive فقط (v1→v2)؛ أي كسر = إصدار جديد + مراجعة الـE2E الثلاثي.
 
-## §4 · خطة التنفيذ المرحلية (بوّات صارمة)
+## §3 · الجدول الجامع للملكية — لكل وظيفة: المالك، المستهلكون، مصدر البيانات
+
+| الوظيفة | المالك | المستهلكون | مصدر البيانات |
+|---|---|---|---|
+| Connector Registry | **ZPIC** | كل مستهلكي ZPIC | `discovery_sources` + سجلات المنظومات عند الترحيل |
+| Acquisition + Budget Guard | **ZPIC** | عبر ZPIC | مزوّدو ZPIC (Apify-1688 الآن) |
+| Raw Store | **ZPIC** | التشخيص وإعادة المعالجة والبنش | استجابات مزوّدي ZPIC الخام (بسياسة §5) |
+| Normalization → ProductIntel | **ZPIC** | S BASE · Z Lens · AYWEBS (push/pull) · لاحقاً Analytics | خام المزوّدين |
+| Translation | **ZPIC** (العقد والمعجم) | كل المنظومات | adapter مزوّد خارجي (§7)؛ لاحقاً AI Core |
+| Image Line | **ZPIC** | كل المنظومات | بنية imageIsolation/imageWork القائمة + مزوّدو الصور |
+| Dedup · Quality · Catalog | **ZPIC** | كل المنظومات | ProductIntel |
+| Cache Management | **ZPIC** (محرك السياسات) | كل المنظومات | — (سياسات §6، سياسات المنظومات القائمة تُحفظ كما هي عند الترحيل) |
+| Supplier Intelligence | **ZPIC** | S BASE · CRM | خام المزوّدين |
+| قراءة FX | **ZPIC** (قراءة) | محرك التسعير | `pricing_config.fx_extra_rates` |
+| **Quote/Price Trust (توقيع وتحقق)** | **Commerce Core** — خدمة موحّدة خارج ZPIC (§4) | AYWEBS · zayrovix · Commerce Core | تواقيع موقعة + enforcement في cartPriceTrust |
+| قرار التسعير التجاري (هوامش/عرض) | **محرك التسعير + Commerce Core** | السلة/الطلبات | ProductIntel (مدخلات) + سياسات تجارية |
+| السلة/الطلبات/الدفع/العربون | **Commerce Core** | الجميع | — |
+| تحليل المبيعات | **Analytics** | لوحات القرار | مبيعات فعلية |
+| التوصيات | **Recommendation Engine** | الواجهات | تفاعل + بيانات منتج منظمة من ZPIC عند الطلب |
+| Best Sellers | **Analytics/Commerce** | الواجهات | مبيعات فعلية (ليس بيانات ZPIC وحدها) |
+| procurement/logistics | **CRM / arrival-ingestion / المستودعات** | الطلبات | مسار الطلب |
+
+## §4 · ملكية Quote-Token (قرار المالك مُطبَّق)
+
+**الملاحظة صحيحة:** التكرار ×2 حقيقي (`zayrovix/priceQuote.ts` + `aywebs/quoteToken.ts`) وخطر انحراف أمني. **لكن الملكية ليست لـZPIC:** توقيع السعر والتحقق منه وظيفة ثقة تجارية مرتبطة بالمعاملة عند الطلب — **مالكها حد الثقة في Commerce Core**، ونقطة الإنفاذ القائمة `services/cartPriceTrust.ts` تبقى كما هي.
+
+**القرار التصميمي:**
+1. تُوحَّد **تنفيذياً** في خدمة مشتركة واحدة (مقترح الموضع: طبقة `src/services/` — لا كود الآن).
+2. Commerce Core يملك **السياسة**: ماذا يُوقّع، مدة الصلاحية، متى يُتحقق (عند الطلب)، وماذا يحدث عند فشل التحقق.
+3. ZPIC **لا يوقّع أسعاراً أبداً** — قد يحمل في ProductIntel مرجع عرض موقّع إن وُجد، بلا أي منطق توقيع.
+4. الترحيل يبقى نقطة-نقطة خلف اختبارات cartPriceTrust (صفر تعطيل للسلة)، وتُحذف النسخ القديمة بعد اكتمال نقاط الاستدعاء.
+
+## §5 · سياسة Raw Store (صريحة قبل إنشاء الجدول — طلب المالك)
+
+| البند | السياسة |
+|---|---|
+| **ماذا يُخزَّن** | **الاستجابة الخام كاملة verbatim** من مزوّد ZPIC (لإثبات fieldProvenance وإعادة المعالجة عند drift) — بلا أي تحويل |
+| **ماذا لا يُخزَّن أبداً** | أي بيانات عميل/جلسة/مصادقة — Raw Store يلمس استجابات المزوّدين فقط؛ أي ترويسة أو حقل يحمل هوية مستخدم يُسقط عند الكتابة (قائمة إسقاط معلنة) |
+| **الحجم** | تقدير: KB لكل عنصر؛ **سقف كتابة لكل connector** (افتراضي مقترح: 50MB/يوم، قابل للضبط من env) — تجاوزه ⇒ توقف تخزين بكود صادق ولا يوقف الجلب |
+| **الاحتفاظ (TTL)** | 60 يوماً افتراضياً؛ قابلة للضبط لكل connector (تفاصيل أطول للبنش عند طلب المالك) |
+| **الحذف** | job دوري يحذف ما تجاوز TTL (حذف فعلي لا وسم)؛ حذف فوري عند الطلب لـrun معيّن (purge by runId) |
+| **الربط بالمنتج الموحد** | `raw{runId, fetchedAt, ref}` داخل ProductIntel — استرجاع حرفي بـref واحد |
+| **جدوله** | `zpic_raw_items` عند بوّة P1-C فقط — لا migrations قبلها (قاعدة المالك) |
+
+## §6 · سياسة الكاش — إدارة مركزية بسياسات متمايزة (طلب المالك مُطبَّق)
+
+محرك سياسات واحد في ZPIC (⑩) يطبّق **مصفوفة لكل نوع بيانات × لكل مصدر** — لا سياسة واحدة للجميع:
+
+| نوع البيانات | السياسة الافتراضية | override لكل مصدر |
+|---|---|---|
+| تفاصيل منتج | TTL 7 أيام | نعم (لكل connector) |
+| سعر/توفر عند القراءة | 24 ساعة | **AYWEBS resolveCache تحافظ على سياساتها المقيسة بالثواني كما هي عند الترحيل — لا يتغير رقمها** |
+| نتائج البحث | بلا كاش (حي — درس Soorce) | dedup استعلامات قصير اختياري 15–30د — لا يُفعَّل قبل قياس |
+| صور مرآة | طويلة الأجل (تتبع سياسة تخزين الوسائط القائمة) | نعم |
+| بيانات المورّد | تتبع تفاصيل المنتج | — |
+| كاش Z Lens الداخلي | **يبقى داخل Z Lens (10د/100 كما هو)** — لا يهاجر | لا |
+| خام Raw Store | 60 يوماً (§5) | نعم |
+
+**القاعدة:** كل نوع/مصدر بسياسته المعلنة في المركز؛ التوحيد في **الإدارة** لا في **الأرقام**.
+
+## §7 · الترجمة — مستقلة عن اكتمال AI Core (طلب المالك مُطبَّق)
+
+1. ZPIC يملك **الواجهة والمعجم** (معجم وحدات وصناعة zh — شرط إطلاق، درس jin في D13).
+2. التنفيذ عبر **Provider Adapter مستقل** يُختار من env: مزوّد ترجمة خارجي متاح الآن — **بدون أي اعتماد على ai-core**.
+3. عند دمج AI Core في مرحلته المقررة يُضاف adapter ثالث لنفس الواجهة بلا تغيير في ZPIC ولا في المستهلكين.
+4. إطلاق P1-C (الترجمة) **غير معلَق على اكتمال AI Core** — تصحيح مباشر لملاحظة المالك على v1.0.
+
+## §8 · اتجاه التبعيات ومنع الدورات
+
+| القاعدة | الفحص الآلي |
+|---|---|
+| المستهلك → ZPIC فقط؛ ZPIC → مزوّديها فقط؛ لا سهم عكسي من ZPIC نحو منظومة | فحص imports في كل PR: لا `import` من `src/zpic/*` داخل `src/zayrovix/` الداخلي إلى ما عدا واجهة الاستهلاك المعلنة، ولا استيراد ZPIC لأي ملف من `src/aywebs/*` أو `src/zayrovix/*` |
+| لا استيراد متبادل بين أي منظومتين عبر ZPIC (AYWEBS لا تستهلك عبر S BASE) | قائمة واجهات معلنة لكل مستهلك (ACL) |
+| مزوّد كل منظومة يبقى داخلها | فحص: BrightData/SerpApi لا يُستدعيان خارج `src/aywebs` / `src/zayrovix` |
+| خدمة الثقة السعرية: استهلاك من الجميع، ملكية Commerce Core | grep: لا منطق توقيع خارج الخدمة الموحّدة بعد الترحيل |
+
+**الرسم الموجه في §1 يلغي الالتباس الذي أشار إليه المالك:** BrightData يظهر الآن داخل حدود AYWEBS، وconnectors ZPIC مملوكة له حصراً.
+
+## §9 · خطة التنفيذ المحدثة (بوّات صارمة)
 
 | المرحلة | المحتوى | بوّة الخروج |
 |---|---|---|
-| **P0 — تم** | دراسة Soorce (D11) + مقارنة المزودين (D12) + تصميم (D13–D15) + حدود (D16) + كلفة (D17) + توصية (D18) + **تدقيق البنية (D19)** + هذا التصميم | موافقة المالك (Checklist §8) |
-| **P1-A أمنية وبنية لا تنتظر** | Budget Guard (سقف يومي لكل مزود، env-gate موحّد) + Quote-Token Service الموحّدة + فهرس أكواد الخطأ | اختبارات السلة/التوكن خضراء 100% بلا أي تغيير سلوك للعميل |
-| **P1-B عقد وسجل** | ProductIntel v1 + تفعيل `discovery_sources` كسجل connectors + S BASE ينتقل للعقد (خلفه Mapper لـSbaseItem الحالي) | E2E الثلاثي AYR-299819 يبقى أخضر |
-| **P1-C طبقات المعرفة** | Raw Store + Cache Layer (تستوعب resolveCache وتعمل كاش SBASE الأول) + Translation Engine zh + خط الصور الموحّد فوق imageIsolation | قياس hit-rate أول أسبوع + عينات ترجمة بمعجم تُعرض للمالك |
-| **P2 — التوسع المشروط** | Dedup عابر-المصادر + بنش المصدر الثاني (Yiwugo / مرشح nice_dev عبر البروتوكول الخماسي) + كتالوج SEO + failover chain + بحث صورة موحّد | قرار بالأرقام الحقيقية من D17 (عتبة Custom-scrapping) |
-| **موازٍ دائماً** | Commerce Core P1 (trio → T1 → Approval) + فجوة born-AWAITING_DEPOSIT في P2 له | لا تؤخَّر لأجل ZPIC إطلاقاً (ملاحظة المالك) |
+| **P0 — تم بجزئه** | D11–D18 + D19 v1.1 + D20 v1.1 | **المراجعة النهائية للمالك ثم الموافقة** (هذا الطلب) |
+| **P1-A منقسمة (جديد)** | (أ) **Budget Guard — ضمن ZPIC**: سقف يومي لكل connector + env-gate موحّد. (ب) **Quote-Token الموحّدة — ملكية Commerce Core، خارج ZPIC**: خدمة مشتركة واحدة + ترحيل نقاط الاستدعاء نقطة-نقطة | (أ) `SOURCE_BUDGET_EXCEEDED` مُختبر؛ (ب) اختبارات cartPriceTrust خضراء 100% بلا تغيير سلوك العميل |
+| **P1-B** | ProductIntel v1 **بكامل حقول الإثبات (§2)** + تفعيل `discovery_sources` كسجل connectors + انتقال Apify-1688 ليكون connector يملكه ZPIC + S BASE أول مستهلك (Mapper لـSbaseItem) | E2E الثلاثي AYR-299819 أخضر + فحص اتجاه imports نظيف |
+| **P1-C** | Raw Store (بسياسة §5 — جدوله عند هذه البوّة فقط) + Cache بمصفوفة §6 + Translation عبر adapter مستقل (§7) + خط الصور فوق imageIsolation | استرجاع حرفي من Raw Store؛ hit-rate مقيس؛ ترجمة «斤»→كغ باختبار؛ **بلا أي مرجع لai-core** |
+| **P2** | Dedup عابر-المصادر + بنش المصدر الثاني (البروتوكول الخماسي) + كتالوج SEO + failover + بحث صورة موحّد | قرار بأرقام D17 |
+| **موازٍ دائم** | Commerce Core P1 (trio → T1 → Approval) + فجوة born-AWAITING_DEPOSIT في P2 له | لا يُؤخَّر لأجل ZPIC إطلاقاً |
 
-## §5 · ما لا يفعله ZPIC ابداً
+## §10 · ما لا تملكه ZPIC (حجب صريح — المبدأ §0)
 
-- لا يعيد بناء adapters AYWEBS ولا منطق lens ولا `/api/zayrovix` (قيد المالك).
-- لا يقرر أسعاراً ولا هامشاً ولا عروضاً — يجلب ويوحّد ويكاش (القرار التجاري: محرك التسعير + Commerce Core).
-- لا يكتب في سلّة/طلبات/دفع ولا يستدعي CRM مباشرة (CRM مستقبِل عبر مسار الطلب).
-- لا يفتح مزوداً جديداً بلا بنش خماسي + اعتماد مالك + حماية رصيد Apify.
-- لا يُخفي أخطاء ولا يقدّم بيانات وهمية — أكواد صادقة فقط.
+توقيع/تحقق الأسعار (Commerce Core §4) · قرار التسعير التجاري (محرك التسعير) · السلة/الطلبات/الدفع/العربون (Commerce Core) · Analytics · التوصيات · Best Sellers (من مبيعات فعلية — ZPIC مزوّد بيانات منظمة لهم عند الطلب فقط) · procurement/logistics (CRM/المستودعات) · UX وأسواق Z Lens · دلالات الجملة وlanes وscoring في S BASE · adapters وسلوك متاجر AYWEBS.
 
-## §6 · مخاطر الترحيل والرد
+## §11 · معايير القبول المحدثة (قابلة للفحص)
 
-| خطر | الرد |
-|---|---|
-| كسر السلة أثناء توحيد التوكن | ترحيل نقاط الاستدعاء واحدة-واحدة خلف اختبارات cartPriceTrust |
-| انحراف عقد ProductIntel ليعود بثلاثة عقود | Mapper واحد لكل مصدر + اختبار مطابقة لكل mapper + حظر حقول خارج العقد |
-| كاش موحّد يبطئ AYWEBS المضبوطة بثوانٍ | سياسة TTL لكل connector (resolveCache تنتقل كما هي أولاً — لا تغيير أرقامها) |
-| ترجمة بلا معجم | المعجم شرط إطلاق (درس jin — D13) |
-| زحف نطاق ZPIC نحو Commerce | حد D16 + سؤال «أي صندوق؟» إلزامي لكل ميزة |
+1. P1-A(أ): `SOURCE_BUDGET_EXCEEDED` مُختبر + سقوف env مقروءة في السجل.
+2. P1-A(ب): توقيع/تحقق من خدمة واحدة فقط (فحص grep لا يعيد ثانية) + اختبارات السلة خضراء.
+3. P1-B: كل عنصر ProductIntel يحمل `fetchedAt/verifiedAt/dataFreshness/fieldProvenance` (اختبار مطابقة لكل mapper) + E2E الثلاثي أخضر + فحص اتجاه imports (§8) نظيف في كل PR.
+4. P1-C: استرجاع Raw حرفي بـref + حذف بعد TTL مُختبر + سقف كتابة مُختبر؛ سياسات الكاش مطبقة من مصفوفة §6 (resolveCache وlens بأرقامها الأصلية)؛ ترجمة تعمل بadapter خارجي بلا أي import لai-core.
+5. عام: صفر تعديل في `src/aywebs/adapters/*` والداخليات (فحص git diff نصي)؛ ZPIC بلا أي منطق توقيع/سلة/دفع.
 
-## §7 · معايير القبول لكل مرحلة (قابلة للفحص)
+## §12 · Checklist قرار المالك — للمراجعة النهائية
 
-1. P1-A: `SOURCE_BUDGET_EXCEEDED` مُختبر؛ توقيع/تحقق توكن من خدمة واحدة فقط عبر grep لا يعيد ثانية.
-2. P1-B: كل نداء S BASE يمر عبر ZPIC (لا استيراد مباشر لapify.ts خارج connector)؛ E2E الثلاثي أخضر.
-3. P1-C: Raw Store يستعيد عنصراً حرفياً من run قديم؛ hit-rate مقيّس؛ ترجمة «斤»→كغ مثبتة باختبار.
-4. P2: فشل مزود أساسي ⇒ بديل مصادق يجيب بكود واحد موحّد، والعميل يرى رسالة صادقة.
-5. عام: صفر تعديل في `src/aywebs/adapters/*` و`src/zayrovix/` الداخلي (فحص git diff نصي في كل PR).
-
-## §8 · Checklist قرار المالك — ZPIC (يُضاف إلى D18-10)
-
-11. اعتماد التسمية والنطاق: ZPIC = نواة مشتركة للثلاث منظومات (تدرّج ZPIM).
-12. اعتماد إيجادات D19 الستة وأسطر الشواهد.
-13. اعتماد استراتيجية wrap-not-rewrite وترتيب الترحيل (S BASE أولاً، بلا رجعية).
-14. اعتماد الجدولين الجديدين فقط (`zpic_raw_items`, `zpic_cache_meta`) عند بوّة P1-C — لا migrations قبلها.
-15. اعتماد أولوية P1-A الأمنية (Budget Guard + توكن موحّد) كأول كود بعد التوقيع.
-16. تأكيد نهائي: ZPIC لا يؤخر Commerce Core — الجدولان موازيان ببوّات مستقلة.
+11. اعتماد المبدأ §0 وحدود الملكية في §3 و§10.
+12. اعتماد اتجاهات التبعية §1/§8 (BrightData داخل AYWEBS؛ مزوّدو ZPIC مملوكة له).
+13. اعتماد ملكية Quote-Token لـCommerce Core مع التوحيد التنفيذي (§4).
+14. اعتماد حقول الإثبات والامتدادات في ProductIntel v1 (§2).
+15. اعتماد سياسة Raw Store (§5) ومصفوفة الكاش (§6) ونمط الترجمة المستقل (§7).
+16. اعتماد تقسيم P1-A وترتيب البوّات (§9).
+17. تأكيد نهائي: Commerce Core موازٍ لا معطَّل — ثم يُفتح التنفيذ فقط بعد هذا الاعتماد.
