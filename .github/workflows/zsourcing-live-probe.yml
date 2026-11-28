@@ -6,6 +6,12 @@
 name: "Z Sourcing — sonde vivante (point d'arrêt)"
 
 on:
+  # الإطلاق الذاتي: أي push يلمس ملفات الجامع نفسها يشغّل الشواهد الحية —
+  # (حيلة التسجيل: workflows الفرع غير الافتراضي لا تظهر في UI إلا بعد أول run).
+  push:
+    paths:
+      - ".github/workflows/zsourcing-live-probe.yml"
+      - "tests/zsourcing-live-probe.test.ts"
   workflow_dispatch:
     inputs:
       base:
