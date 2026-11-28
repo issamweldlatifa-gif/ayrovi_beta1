@@ -39,6 +39,8 @@ export default defineConfig({
       APIFY_ALIEXPRESS_IMAGE_ACTOR: '',
       APIFY_IMAGE_MAX_RESULTS: '',
       APIFY_SEARCH_MAX_ITEMS: '',
+      // S Base — حارس الميزانية (P1-A(a)): hermétique — السقف لا يتسرّب من .env محلي.
+      SBASE_DAILY_BUDGET_USD: '',
       GROQ_API_KEY: '',
       GEMINI_API_KEY: '',
       GOOGLE_API_KEY: '',

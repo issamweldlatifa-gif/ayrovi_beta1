@@ -37,6 +37,7 @@ import { createAssistantRouter } from './assistant/routes';
 import { createOcerexRouter } from './ocerex/routes';
 import { createAyWebsRouter } from './aywebs/routes';
 import { createSbaseRouter } from './sbase/routes';
+import { createSbaseBudgetGuard, readSbaseBudgetCapUsd } from './sbase/budget';
 import { ensureAyWebsSchema } from './aywebs/schema';
 import { ERP_MODULES } from './erp-core/modules';
 import { bootstrapErpCore } from './erp-core/bootstrap';
@@ -608,6 +609,13 @@ app.use('/api/sbase', createSbaseRouter({
      اختيار الزبون (لون/مقاس) عند الإضافة لأن التوفر قرأ فعلاً، لا تساهلاً. */
   recordVariantContract: (productKey, contract, checkedAt) =>
     recordVariantContract(productKey, contract, checkedAt),
+  /* حارس الميزانية اليومية (P1-A(a) — D22 v1.1، اعتماد المالك 28/11/2026):
+     سجل يومي محفوظ في جدول `settings` القائم (صفر migrations) بنمط
+     check-and-reserve — يبقى عبر restart. بلا SBASE_DAILY_BUDGET_USD (أو
+     قيمة ≤ 0): لا حارس — السلوك مطابق لما قبل التنفيذ حرفياً. */
+  ...(readSbaseBudgetCapUsd(process.env.SBASE_DAILY_BUDGET_USD) !== null
+    ? { checkBudget: createSbaseBudgetGuard(db, { capUsd: readSbaseBudgetCapUsd(process.env.SBASE_DAILY_BUDGET_USD) as number }) }
+    : {}),
 }));
 app.use('/api', createApiRouter(db, scraper, visionExtractor));
 

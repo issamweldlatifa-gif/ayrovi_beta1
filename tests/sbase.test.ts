@@ -44,6 +44,7 @@ import { extractProducts, missingFacets, normalizeProduct, parsePriceText } from
 import { extractDetail } from '../src/sbase/detail';
 import { clearSbaseCache, createSbaseRouter } from '../src/sbase/routes';
 import { sbaseImageFailureFrom } from '../src/sbase/image';
+import { SbaseError } from '../src/sbase/errors';
 
 const APIFY_KEY = 'test_apify_token';
 
@@ -75,11 +76,12 @@ const RULES = {
   updatedAt: new Date().toISOString(),
 };
 
-function app(options: { pricingRules?: unknown } = {}) {
+function app(options: { pricingRules?: unknown; checkBudget?: (kind: 'search' | 'detail' | 'image') => void } = {}) {
   const instance = express();
   instance.use(express.json());
   instance.use('/api/sbase', createSbaseRouter({
     getPricingRules: () => (options.pricingRules === undefined ? (RULES as never) : (options.pricingRules as never)),
+    ...(options.checkBudget ? { checkBudget: options.checkBudget } : {}),
   }));
   return instance;
 }
@@ -996,5 +998,33 @@ describe('S Base — isolation', () => {
       expect(source).not.toMatch(/sandbase/i);
       expect(source).not.toMatch(/SANDBASE_API_KEY|SBASE_PROVIDER/);
     }
+  });
+});
+
+describe('S Base — حارس الميزانية اليومية (P1-A(a) — D22 v1.1)', () => {
+  test('البحث: الحارس المحقون يرفض قبل أي نداء مدفوع — الكود الصادق يصل للمجموعة', async () => {
+    const calls = stubApify([]);
+    const instance = app({
+      checkBudget: () => { throw new SbaseError('SOURCE_BUDGET_EXCEEDED', 'سقف اليوم بلغ حدّه.', 503); },
+    });
+    const res = await request(instance).post('/api/sbase/search').send({ q: 'mini traceur' });
+    expect(res.status).toBe(200);
+    const group = res.body.data.groups[0];
+    expect(group.status).toBe('error');
+    expect(group.error.code).toBe('SOURCE_BUDGET_EXCEEDED');
+    expect(group.error.message).toContain('سقف');
+    expect(calls.length).toBe(0); // الحجز قبل الصرف: ما فماش حجز، ما فماش نداء.
+  });
+
+  test('الصورة: الرفض بكود القناة المستقل — لا يتلبس «مزوّد نازل» ولا «صورة غالطة»', async () => {
+    const instance = app({
+      checkBudget: () => { throw new SbaseError('SOURCE_BUDGET_EXCEEDED', 'سقف اليوم بلغ حدّه.', 503); },
+    });
+    const res = await request(instance)
+      .post('/api/sbase/image')
+      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' });
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe('SBASE_IMAGE_BUDGET_EXCEEDED');
+    expect(res.body.providerCode).toBe('SOURCE_BUDGET_EXCEEDED');
   });
 });

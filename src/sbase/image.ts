@@ -113,6 +113,19 @@ export function sbaseImageFailureFrom(error: unknown): SbaseImageError {
   if (providerCode && providerCode.startsWith('SBASE_IMAGE_') && typeof candidateStatus === 'number') {
     return new SbaseImageError(providerCode, providerMessage, candidateStatus, null);
   }
+  /*
+   * P1-A(a) — حارس الميزانية (D22 v1.1): الرفض من عندنا **قبل أي نداء مدفوع** —
+   * كود مستقلّ لا يُتنكّر «مزوّد نازل» ولا «صورة غالطة» (نفس عقيدة الملف:
+   * كل فشل بكودو وحالتو الحقيقية).
+   */
+  if (providerCode === 'SOURCE_BUDGET_EXCEEDED') {
+    return new SbaseImageError(
+      'SBASE_IMAGE_BUDGET_EXCEEDED',
+      providerMessage || 'سقف الإنفاق اليومي لمزوّد Apify بلغ حدّه — جرّب غداً أو ارفع السقف من إعدادات الخادم.',
+      503,
+      providerCode,
+    );
+  }
   for (const failure of PROVIDER_FAILURES) {
     if (providerCode && failure.match.test(providerCode)) {
       return new SbaseImageError(failure.code, failure.message, failure.status, providerCode);

@@ -150,6 +150,7 @@ export interface SbaseImageStoreGroup {
 async function searchOneSource(
   source: SbaseSourceDescriptor,
   query: string,
+  checkBudget?: (kind: 'search' | 'detail' | 'image') => void,
 ): Promise<SbaseGroup> {
   const base: SbaseGroupSource = {
     id: source.id,
@@ -168,6 +169,8 @@ async function searchOneSource(
   }
 
   try {
+    // حجز تقدير النداء قبل الصرف (P1-A(a) — D22 v1.1): ما فماش حجز، ما فماش نداء.
+    checkBudget?.('search');
     const run = await runApifySearch(query);
     const items = extractProducts(run.data, { arrays: source.arrays, limit: 20 });
     const missingFields = items.length > 0 ? missingFacets(items) : [];
@@ -218,6 +221,13 @@ export interface SbaseRouterOptions {
    * بلا محقون: التفاصيل تعمل بلا عقد والحارس يظل صادقاً كما هو.
    */
   recordVariantContract?: (productKey: string, contract: SbaseVariantContractInput, checkedAt?: string) => void;
+  /**
+   * حارس الميزانية اليومية (P1-A(a) — D22 v1.1): يُحقن من نقطة التركيب (server.ts)
+   * ويحجز تقدير النداء المدفوع **قبل** تشغيله، ويرمي `SOURCE_BUDGET_EXCEEDED`
+   * (503) عند تجاوز السقف. السجل محفوظ في جدول `settings` القائم — يبقى عبر
+   * restart. بلا محقون: لا حارس — السلوك مطابق لما قبل التنفيذ (بوّة صامتة).
+   */
+  checkBudget?: (kind: 'search' | 'detail' | 'image') => void;
 }
 
 export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
@@ -339,7 +349,7 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
     }
 
     const started = Date.now();
-    const groups = (await Promise.all(wanted.map((source) => searchOneSource(source, query))))
+    const groups = (await Promise.all(wanted.map((source) => searchOneSource(source, query, options.checkBudget))))
       // Prix source + estimation TND (moteur de prix existant) sur CHAQUE ligne.
       .map((group) => ({ ...group, items: group.items.map((item) => ({ ...item, priceEstimate: estimate(item) })) }));
     const totalMs = Date.now() - started;
@@ -404,6 +414,8 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
     }
 
     try {
+      // حجز تقدير البطاقة قبل الصرف (P1-A(a) — D22 v1.1) — على الاختراق في الكاش فقط.
+      options.checkBudget?.('detail');
       const run = await runApifyDetail({ id, url });
       const detail = extractDetail(run.data);
       recordDetailVariantContract(detail);
@@ -477,6 +489,8 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
         selectedStores.map(async (source) => {
           const label = { id: source.id, label: source.label, vendor: source.vendor };
           try {
+            // حجز تقدير نداء هذا المتجر قبل الصرف (P1-A(a) — D22 v1.1) — لكل متجر نداء مستقلّ.
+            options.checkBudget?.('image');
             const result = source.kind === 'server-actor'
               ? await searchApifyByImage(imageBase64)
               : await searchApifyAliexpressByImage(imageBase64);
